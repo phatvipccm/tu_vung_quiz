@@ -2201,7 +2201,45 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
       }
     }
 
-    // ===== PRONUNCIATION: DUAL ENGINE TTS (Web Speech API + Fallback Audio) =====
+    // ===== PRONUNCIATION: TRIPLE ENGINE TTS (Native Human MP3 + Web Speech + Audio Fallback) =====
+
+    // Mở khóa âm thanh di động cho iOS Safari & Android Chrome ngay khi người dùng chạm vào màn hình lần đầu
+    let audioUnlocked = false;
+    function unlockMobileAudio() {
+      if (audioUnlocked) return;
+      audioUnlocked = true;
+      if (window.speechSynthesis) {
+        window.speechSynthesis.resume();
+        const silent = new SpeechSynthesisUtterance(' ');
+        silent.volume = 0.01;
+        window.speechSynthesis.speak(silent);
+      }
+    }
+    document.addEventListener('click', unlockMobileAudio, { once: true });
+    document.addEventListener('touchstart', unlockMobileAudio, { once: true });
+
+    // Phát file MP3 phát âm chuẩn người thật từ Dictionary API
+    async function playHumanMp3(word) {
+      try {
+        const cleanWord = word.toLowerCase().trim();
+        const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data[0] && data[0].phonetics) {
+            const validAudio = data[0].phonetics.find(p => p.audio && p.audio.trim().length > 0);
+            if (validAudio && validAudio.audio) {
+              const audio = new Audio(validAudio.audio);
+              return new Promise(resolve => {
+                audio.onended = () => resolve(true);
+                audio.onerror = () => resolve(false);
+                audio.play().then(() => {}).catch(() => resolve(false));
+              });
+            }
+          }
+        }
+      } catch (e) {}
+      return false;
+    }
 
     function playFallbackAudio(text, onEnd) {
       try {
@@ -2216,8 +2254,8 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
       }
     }
 
-    // Đọc to từ tiếng Anh hiện tại bằng Web Speech API + Audio Fallback
-    function speakQuestion() {
+    // Đọc to từ tiếng Anh hiện tại (Ưu tiên File MP3 người thật -> Web Speech -> Fallback)
+    async function speakQuestion() {
       const current = quizData[currentIndex];
       if (!current) return;
 
@@ -2237,6 +2275,14 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
         }
       };
 
+      // 1. Thử phát bằng MP3 phát âm người thật trước (Chất lượng cao nhất)
+      const playedMp3 = await playHumanMp3(word);
+      if (playedMp3) {
+        resetBtn();
+        return;
+      }
+
+      // 2. Dự phòng bằng Web Speech API
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
         setTimeout(() => {
