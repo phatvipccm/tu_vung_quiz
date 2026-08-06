@@ -1,0 +1,2894 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ứng Dụng Luyện Ngữ Pháp & Từ Vựng Ngẫu Nhiên</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --accent-purple: #8b5cf6;
+      --accent-pink: #ec4899;
+      --accent-cyan: #06b6d4;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.15) 0px, transparent 50%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 720px;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 2.5rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      text-align: center;
+      background: linear-gradient(135deg, #a78bfa, #ec4899, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    p.subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 2rem;
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* PRESET BUTTONS */
+    .preset-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--accent-cyan);
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .preset-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .preset-btn:hover {
+      background: rgba(139, 92, 246, 0.2);
+      border-color: var(--accent-purple);
+      transform: translateY(-2px);
+    }
+
+    /* INPUT FORM */
+    label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-main);
+    }
+
+    textarea {
+      width: 100%;
+      height: 160px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1rem;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      resize: vertical;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    textarea:focus {
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25);
+    }
+
+    .help-text {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .mode-select {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .radio-card {
+      flex: 1;
+      position: relative;
+    }
+
+    .radio-card input {
+      position: absolute;
+      opacity: 0;
+    }
+
+    .radio-card label {
+      display: block;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      padding: 0.85rem;
+      border-radius: 14px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .radio-card input:checked + label {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(236, 72, 153, 0.25));
+      border-color: var(--accent-purple);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+      border: none;
+      color: white;
+      padding: 1rem;
+      border-radius: 14px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(236, 72, 153, 0.3);
+      transition: all 0.25s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(236, 72, 153, 0.4);
+      filter: brightness(1.1);
+    }
+
+    /* QUIZ SECTION */
+    .quiz-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      margin-bottom: 2rem;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-purple), var(--accent-pink));
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    .quiz-card {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .prompt-tag {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent-cyan);
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .prompt-text {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.5rem;
+    }
+
+    .answer-input-group {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .answer-input {
+      flex: 1;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 0.9rem 1.2rem;
+      color: white;
+      font-size: 1.05rem;
+      outline: none;
+    }
+
+    .answer-input:focus {
+      border-color: var(--accent-purple);
+    }
+
+    .btn-submit {
+      background: var(--accent-purple);
+      border: none;
+      color: white;
+      padding: 0 1.5rem;
+      border-radius: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-submit:hover {
+      background: #7c3aed;
+    }
+
+    /* FEEDBACK CARD */
+    .feedback-card {
+      display: none;
+      padding: 1.25rem;
+      border-radius: 14px;
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .feedback-card.correct {
+      display: block;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--success);
+      color: #6ee7b7;
+    }
+
+    .feedback-card.wrong {
+      display: block;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--danger);
+      color: #fca5a5;
+    }
+
+    .override-btn {
+      margin-top: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .override-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* OPTIONS GRID (For Multiple Choice) */
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .option-btn {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 1rem;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .option-btn:hover {
+      border-color: var(--accent-purple);
+      background: rgba(139, 92, 246, 0.15);
+    }
+
+    /* RESULT SECTION */
+    .score-circle {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 1.5rem auto;
+      box-shadow: 0 10px 30px rgba(236, 72, 153, 0.3);
+    }
+
+    .score-num {
+      font-size: 2.2rem;
+      font-weight: 700;
+    }
+
+    .score-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    .review-list {
+      max-height: 220px;
+      overflow-y: auto;
+      margin-bottom: 1.5rem;
+      text-align: left;
+      padding-right: 0.5rem;
+    }
+
+    .review-item {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--card-border);
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      color: white;
+      padding: 0.8rem 1.2rem;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: background 0.2s;
+      width: 100%;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* VOCAB TABLE STYLES */
+    .vocab-table-container {
+      width: 100%;
+      max-height: 380px;
+      overflow-y: auto;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.7);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+      scroll-behavior: smooth;
+    }
+
+    /* Custom scrollbar for table container */
+    .vocab-table-container::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .vocab-table-container::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5);
+    }
+    .vocab-table-container::-webkit-scrollbar-thumb {
+      background: rgba(139, 92, 246, 0.4);
+      border-radius: 999px;
+    }
+    .vocab-table-container::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-purple);
+    }
+
+    .vocab-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: center;
+      font-size: 0.95rem;
+    }
+
+    .vocab-table th {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: #1b1638;
+      color: #f1f5f9;
+      font-weight: 600;
+      padding: 0.85rem 0.6rem;
+      border-bottom: 2px solid var(--card-border);
+      border-right: 1px solid var(--card-border);
+    }
+
+    .vocab-table th:last-child {
+      border-right: none;
+    }
+
+    .vocab-table td {
+      padding: 0.6rem 0.4rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+    }
+
+    .vocab-table td:last-child {
+      border-right: none;
+    }
+
+    .vocab-table tr:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .cell-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      text-align: center;
+      outline: none;
+      padding: 0.25rem;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+
+    .cell-input:focus {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .phonetic-text {
+      color: #38bdf8;
+      font-style: italic;
+      font-weight: 500;
+      font-family: 'Noto Sans', 'Segoe UI', Arial, sans-serif;
+      letter-spacing: 0.02em;
+    }
+
+    .pos-badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(236, 72, 153, 0.2);
+      color: #f472b6;
+    }
+
+    .view-tab-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 0.4rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .view-tab-btn.active {
+      background: rgba(139, 92, 246, 0.25);
+      border-color: var(--accent-purple);
+      color: white;
+      font-weight: 600;
+    }
+    /* PRONUNCIATION BUTTONS */
+    .pronunciation-bar {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-top: 0.9rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-speak {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      color: #38bdf8;
+      padding: 0.45rem 1rem;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .btn-speak:hover {
+      background: rgba(6, 182, 212, 0.3);
+      transform: scale(1.04);
+    }
+
+    .btn-speak.speaking {
+      background: rgba(6, 182, 212, 0.35);
+      animation: pulse-speak 0.8s infinite alternate;
+    }
+
+    .btn-mic {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(139, 92, 246, 0.15);
+      border: 1px solid rgba(139, 92, 246, 0.4);
+      color: #a78bfa;
+      padding: 0.45rem 1rem;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .btn-mic:hover {
+      background: rgba(139, 92, 246, 0.3);
+      transform: scale(1.04);
+    }
+
+    .btn-mic.recording {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: var(--danger);
+      color: #fca5a5;
+      animation: pulse-speak 0.6s infinite alternate;
+    }
+
+    .mic-result {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+      min-height: 1.2rem;
+      text-align: center;
+    }
+
+    /* CONTEXT EXAMPLE BOX */
+    .example-box {
+      margin-top: 0.9rem;
+      padding: 0.65rem 0.9rem;
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px dashed rgba(139, 92, 246, 0.35);
+      border-radius: 12px;
+      font-size: 0.9rem;
+      color: #e2e8f0;
+      line-height: 1.45;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    .example-box b {
+      color: #f472b6;
+      font-weight: 700;
+      background: rgba(236, 72, 153, 0.2);
+      padding: 0.1rem 0.4rem;
+      border-radius: 5px;
+      border: 1px solid rgba(236, 72, 153, 0.4);
+    }
+    .example-vi {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+      font-style: italic;
+    }
+
+    @keyframes pulse-speak {
+      from { box-shadow: 0 0 0 0 rgba(6,182,212,0.4); }
+      to   { box-shadow: 0 0 0 8px rgba(6,182,212,0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>🎯 Ôn Tập Ngữ Pháp Ngẫu Nhiên</h1>
+    <p class="subtitle">Tự động xáo trộn bài tập & Kiểm tra thông minh</p>
+
+    <!-- SECTION 1: CONFIG / INPUT -->
+    <div id="setup-section" class="section active">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+        <div class="preset-title" style="margin: 0;">⚡ Chọn Bộ Đề Mẫu Có Sẵn:</div>
+        <div style="display: flex; gap: 0.4rem; align-items: center;">
+          <button type="button" id="toggle-multi-btn" onclick="toggleMultiSelectMode()" class="view-tab-btn" style="padding: 0.25rem 0.6rem; font-size: 0.8rem; background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.4); color: #a78bfa;">
+            🔀 Bật Trộn Nhiều Bộ Đề
+          </button>
+          <div id="multi-controls" style="display: none; gap: 0.3rem;">
+            <button type="button" onclick="selectAllPresets(true)" class="view-tab-btn" style="padding: 0.25rem 0.6rem; font-size: 0.78rem;">☑️ Chọn tất cả</button>
+            <button type="button" onclick="selectAllPresets(false)" class="view-tab-btn" style="padding: 0.25rem 0.6rem; font-size: 0.78rem;">✖️ Bỏ chọn</button>
+          </div>
+        </div>
+      </div>
+      <div id="presets-grid" class="presets-grid">
+        <!-- Preset buttons rendered dynamically -->
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <label style="margin: 0;">Danh Sách Từ Vựng / Ngữ Pháp:</label>
+        <div style="display: flex; gap: 0.4rem;">
+          <button type="button" id="tab-table-btn" class="view-tab-btn active" onclick="switchView('table')">📊 Chế Độ Bảng Vocab</button>
+          <button type="button" id="tab-text-btn" class="view-tab-btn" onclick="switchView('text')">📝 Chế Độ Văn Bản</button>
+        </div>
+      </div>
+
+      <!-- TABLE VIEW -->
+      <div id="table-view-container" class="vocab-table-container">
+        <table class="vocab-table">
+          <thead>
+            <tr>
+              <th style="width: 25%;">Từ vựng</th>
+              <th style="width: 15%;">Từ loại</th>
+              <th style="width: 25%;">Phiên âm</th>
+              <th style="width: 25%;">Ý nghĩa</th>
+              <th style="width: 10%;">Xóa</th>
+            </tr>
+          </thead>
+          <tbody id="vocab-table-body">
+            <!-- Dynamic Table Rows -->
+          </tbody>
+        </table>
+        <div style="padding: 0.6rem; text-align: center; border-top: 1px solid var(--card-border); position: sticky; bottom: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px);">
+          <button type="button" onclick="addTableRow()" style="background: rgba(255, 255, 255, 0.05); border: 1px dashed var(--accent-purple); color: var(--text-main); padding: 0.4rem 1.2rem; border-radius: 8px; font-size: 0.85rem; cursor: pointer; font-weight: 500;">
+            ➕ Thêm Hàng Mới
+          </button>
+        </div>
+      </div>
+
+      <!-- TEXT AREA VIEW -->
+      <div id="text-view-container" style="display: none;">
+        <textarea id="data-input" oninput="onTextareaInput()" placeholder="Nhập theo cú pháp: Từ/Ngữ pháp = Nghĩa hoặc Ví dụ&#10;&#10;Ví dụ:&#10;Mother = Mẹ&#10;Father = Bố&#10;Present Simple = Thì hiện tại đơn&#10;Take after = Giống ai đó"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.4rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div class="help-text" style="margin: 0;">💡 Dấu ngăn cách: <code>=</code>, <code>:</code>, hoặc <code>-</code></div>
+          <span id="autosave-status" style="font-size: 0.8rem; color: var(--success); font-weight: 500; opacity: 0; transition: opacity 0.3s;">✅ Đã tự động lưu</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" onclick="aiAutoTranslate(this)" style="background: rgba(6, 182, 212, 0.2); border: 1px solid var(--accent-cyan); color: #38bdf8; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.82rem; cursor: pointer; font-weight: 600;">
+            🤖 AI Tra Từ & Điền Bảng
+          </button>
+          <button type="button" onclick="saveCustomPreset()" style="background: rgba(139, 92, 246, 0.2); border: 1px solid var(--accent-purple); color: white; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.82rem; cursor: pointer; font-weight: 600;">
+            ➕ Thêm Bộ Đề Mới
+          </button>
+        </div>
+      </div>
+
+      <label>Chế độ bài tập:</label>
+      <div class="mode-select">
+        <div class="radio-card">
+          <input type="radio" id="mode-type" name="quiz-mode" value="type" checked>
+          <label for="mode-type">✍️ Tự gõ đáp án</label>
+        </div>
+        <div class="radio-card">
+          <input type="radio" id="mode-choice" name="quiz-mode" value="choice">
+          <label for="mode-choice">🔠 Trắc nghiệm (4 câu)</label>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="startQuiz()">🔥 Bắt Đầu Bài Tập Ngẫu Nhiên</button>
+    </div>
+
+    <!-- SECTION 2: QUIZ -->
+    <div id="quiz-section" class="section">
+      <div class="quiz-header">
+        <button type="button" onclick="backToSetup()" style="background: rgba(255, 255, 255, 0.08); border: 1px solid var(--card-border); color: var(--text-main); padding: 0.35rem 0.8rem; border-radius: 10px; font-size: 0.82rem; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 0.3rem; transition: background 0.2s;" onhover="this.style.background='rgba(255,255,255,0.15)'">
+          🏠 Trang chủ
+        </button>
+        <span id="counter" style="color: var(--text-muted); font-size: 0.9rem;">Câu 1 / 10</span>
+        <span id="score-live" style="color: var(--accent-cyan); font-weight: 600; font-size: 0.9rem;">Đúng: 0</span>
+      </div>
+
+      <div class="progress-bar-bg">
+        <div id="progress-bar" class="progress-bar-fill"></div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="prompt-tag">Hãy đoán nghĩa / từ tương ứng</div>
+        <div id="question-text" class="prompt-text">...</div>
+        <!-- Pronunciation bar -->
+        <div class="pronunciation-bar">
+          <button class="btn-speak" id="btn-speak" onclick="speakQuestion()" title="Nghe phát âm">
+            🔊 Nghe phát âm
+          </button>
+          <button class="btn-mic" id="btn-mic" onclick="startMicCheck()" title="Đọc theo để kiểm tra">
+            🎤 Đọc theo
+          </button>
+        </div>
+        <div class="mic-result" id="mic-result"></div>
+      </div>
+
+      <!-- TYPE MODE INPUT -->
+      <div id="type-container" class="answer-input-group">
+        <input type="text" id="user-answer" class="answer-input" placeholder="Gõ câu trả lời tại đây..." autocomplete="off">
+        <button class="btn-submit" onclick="checkAnswer()">Gửi</button>
+      </div>
+
+      <!-- CHOICE MODE GRID -->
+      <div id="choice-container" class="options-grid" style="display: none;"></div>
+
+      <!-- FEEDBACK CARD -->
+      <div id="feedback" class="feedback-card">
+        <div id="feedback-text"></div>
+        <button id="override-btn" class="override-btn" style="display:none;" onclick="overrideCorrect()">
+          ✨ Tôi đã gõ đúng (Chấp nhận đáp án của tôi)
+        </button>
+
+        <!-- Context Example Sentence Box (Shown ONLY after answering) -->
+        <div id="example-card" class="example-box" style="display: none; position: relative; margin-top: 0.8rem;">
+          <button type="button" id="btn-speak-example" onclick="speakExampleSentence()" title="Nghe AI đọc cả câu ví dụ" style="background: rgba(139, 92, 246, 0.2); border: 1px solid rgba(139, 92, 246, 0.4); color: #a78bfa; padding: 0.25rem 0.65rem; border-radius: 8px; font-size: 0.78rem; cursor: pointer; float: right; margin-left: 0.5rem; font-weight: 600; font-family: 'Outfit', sans-serif;">
+            🔊 Nghe cả câu
+          </button>
+          <div id="example-en"></div>
+          <div id="example-vi" class="example-vi"></div>
+        </div>
+      </div>
+
+      <button id="next-btn" class="btn-primary" style="display: none;" onclick="nextQuestion()">Next ➡️</button>
+    </div>
+
+    <!-- SECTION 3: RESULT -->
+    <div id="result-section" class="section" style="text-align: center;">
+      <h2>🎉 Hoàn Thành Bài Tập!</h2>
+      <p style="color: var(--text-muted); margin-top: 0.4rem;">Dưới đây là kết quả của bạn</p>
+
+      <div class="score-circle">
+        <div id="final-score" class="score-num">0%</div>
+        <div class="score-label">Chính xác</div>
+      </div>
+
+      <div id="result-message" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 1.5rem;"></div>
+
+      <div id="review-box" style="display: none;">
+        <div class="preset-title">❌ Các câu cần ôn lại:</div>
+        <div id="review-list" class="review-list"></div>
+      </div>
+
+      <button class="btn-primary" onclick="restartQuiz()">🔄 Chơi Lại Bộ Đề Này</button>
+      <button class="btn-secondary" onclick="backToSetup()">⚙️ Nhập/Chọn Bộ Đề Khác</button>
+    </div>
+
+  </div>
+
+  <script>
+    // PRESETS DATA - 20+ Chủ đề thông dụng đầy đủ từ tài liệu 1000 từ vựng
+    const PRESETS = {
+      family: `aunt = (n) /ɑːnt/ cô, dì
+baby = (n) /ˈbeɪbi/ em bé
+brother = (n) /ˈbrʌðər/ anh/em trai
+child = (n) /tʃaɪld/ đứa trẻ
+cousin = (n) /ˈkʌzn/ anh/chị/em họ
+daughter = (n) /ˈdɔːtər/ con gái
+elderly = (adj) /ˈeldərli/ người cao tuổi
+family = (n) /ˈfæməli/ gia đình
+father = (n) /ˈfɑːðər/ bố, cha
+grandfather = (n) /ˈɡrændˌfɑːðər/ ông nội/ngoại
+grandmother = (n) /ˈɡrændˌmʌðər/ bà nội/ngoại
+husband = (n) /ˈhʌzbənd/ chồng
+infant = (n) /ˈɪnfənt/ trẻ sơ sinh
+mother = (n) /ˈmʌðər/ mẹ
+nephew = (n) /ˈnefju/ cháu trai
+niece = (n) /niːs/ cháu gái
+parent = (n) /ˈpeərənt/ bố/mẹ
+sibling = (n) /ˈsɪblɪŋ/ anh chị em ruột
+sister = (n) /ˈsɪstər/ chị/em gái
+son = (n) /sʌn/ con trai
+teenager = (n) /ˈtiːneɪdʒər/ thiếu niên
+twin = (n) /twɪn/ sinh đôi
+uncle = (n) /ˈʌŋkl/ chú, bác
+widow = (n) /ˈwɪdəʊ/ góa phụ
+wife = (n) /waɪf/ vợ`,
+
+      body: `ankle = (n) /ˈæŋkl/ mắt cá chân
+arm = (n) /ɑːrm/ cánh tay
+back = (n) /bæk/ lưng
+beard = (n) /bɪərd/ râu
+blood = (n) /blʌd/ máu
+bone = (n) /bəʊn/ xương
+brain = (n) /breɪn/ não
+chest = (n) /tʃest/ ngực
+chin = (n) /tʃɪn/ cằm
+ear = (n) /ɪər/ tai
+elbow = (n) /ˈelbəʊ/ khuỷu tay
+eye = (n) /aɪ/ mắt
+face = (n) /feɪs/ khuôn mặt
+finger = (n) /ˈfɪŋɡər/ ngón tay
+foot = (n) /fʊt/ bàn chân
+forehead = (n) /ˈfɔːrhed/ trán
+hair = (n) /heər/ tóc
+hand = (n) /hænd/ bàn tay
+head = (n) /hed/ đầu
+heart = (n) /hɑːrt/ trái tim
+hip = (n) /hɪp/ hông
+knee = (n) /niː/ đầu gối
+leg = (n) /leɡ/ chân
+lip = (n) /lɪp/ môi
+lung = (n) /lʌŋ/ phổi
+mouth = (n) /maʊθ/ miệng
+muscle = (n) /ˈmʌsl/ cơ
+neck = (n) /nek/ cổ
+nose = (n) /nəʊz/ mũi
+shoulder = (n) /ˈʃəʊldər/ vai
+skin = (n) /skɪn/ da
+stomach = (n) /ˈstʌmək/ dạ dày
+teeth = (n) /tiːθ/ răng
+throat = (n) /θrəʊt/ họng
+thumb = (n) /θʌm/ ngón cái
+toe = (n) /təʊ/ ngón chân
+tongue = (n) /tʌŋ/ lưỡi
+waist = (n) /weɪst/ eo
+wrist = (n) /rɪst/ cổ tay`,
+
+      clothes: `belt = (n) /belt/ thắt lưng
+blouse = (n) /blaʊz/ áo sơ mi nữ
+boot = (n) /buːt/ ủng
+bracelet = (n) /ˈbreɪslət/ vòng tay
+button = (n) /ˈbʌtn/ nút
+cap = (n) /kæp/ mũ lưỡi trai
+coat = (n) /kəʊt/ áo khoác dài
+dress = (n) /dres/ váy
+earring = (n) /ˈɪərɪŋ/ hoa tai
+fashion = (n) /ˈfæʃn/ thời trang
+glove = (n) /ɡlʌv/ găng tay
+handbag = (n) /ˈhændbæɡ/ túi xách
+hat = (n) /hæt/ mũ
+jacket = (n) /ˈdʒækɪt/ áo khoác ngắn
+jeans = (n) /dʒiːnz/ quần jean
+jewelry = (n) /ˈdʒuːəlri/ đồ trang sức
+necklace = (n) /ˈnekləs/ vòng cổ
+pajamas = (n) /pəˈdʒɑːməz/ đồ ngủ
+pants = (n) /pænts/ quần dài
+pocket = (n) /ˈpɑːkɪt/ túi
+purse = (n) /pɜːrs/ ví
+ring = (n) /rɪŋ/ nhẫn
+sandal = (n) /ˈsændl/ dép xăng đan
+scarf = (n) /skɑːrf/ khăn quàng cổ
+shirt = (n) /ʃɜːrt/ áo sơ mi
+shoe = (n) /ʃuː/ giày
+shorts = (n) /ʃɔːrts/ quần đùi
+skirt = (n) /skɜːrt/ váy
+sleeve = (n) /sliːv/ tay áo
+sock = (n) /sɑːk/ tất
+suit = (n) /suːt/ bộ comple
+sweater = (n) /ˈswetər/ áo len
+tie = (n) /taɪ/ cà vạt
+underwear = (n) /ˈʌndərweər/ đồ lót
+uniform = (n) /ˈjuːnɪfɔːrm/ đồng phục
+wallet = (n) /ˈwɑːlɪt/ ví tiền
+watch = (n) /wɑːtʃ/ đồng hồ đeo tay
+zipper = (n) /ˈzɪpər/ khóa kéo`,
+
+      colors: `beige = (adj) /beɪʒ/ màu be
+black = (adj) /blæk/ màu đen
+blue = (adj) /bluː/ màu xanh dương
+brown = (adj) /braʊn/ màu nâu
+color = (n) /ˈkʌlər/ màu sắc
+colorful = (adj) /ˈkʌlərfl/ nhiều màu sắc
+cream = (adj) /kriːm/ màu kem
+dark = (adj) /dɑːrk/ tối, sẫm màu
+gold = (adj) /ɡəʊld/ màu vàng kim
+gray = (adj) /ɡreɪ/ màu xám
+green = (adj) /ɡriːn/ màu xanh lá
+ivory = (adj) /ˈaɪvəri/ màu ngà
+light = (adj) /laɪt/ sáng, nhạt màu
+navy = (adj) /ˈneɪvi/ màu xanh đậm
+orange = (adj) /ˈɔːrɪndʒ/ màu cam
+pink = (adj) /pɪŋk/ màu hồng
+purple = (adj) /ˈpɜːrpl/ màu tím
+red = (adj) /red/ màu đỏ
+shade = (n) /ʃeɪd/ sắc thái màu
+silver = (adj) /ˈsɪlvər/ màu bạc
+transparent = (adj) /trænˈspærənt/ trong suốt
+turquoise = (adj) /ˈtɜːrkwɔɪz/ màu ngọc lam
+white = (adj) /waɪt/ màu trắng
+yellow = (adj) /ˈjeləʊ/ màu vàng`,
+
+      house: `address = (n) /əˈdres/ địa chỉ
+apartment = (n) /əˈpɑːrtmənt/ căn hộ
+attic = (n) /ˈætɪk/ gác mái
+balcony = (n) /ˈbælkəni/ ban công
+bathroom = (n) /ˈbæθruːm/ phòng tắm
+bedroom = (n) /ˈbedruːm/ phòng ngủ
+building = (n) /ˈbɪldɪŋ/ tòa nhà
+carpet = (n) /ˈkɑːrpɪt/ thảm
+ceiling = (n) /ˈsiːlɪŋ/ trần nhà
+chair = (n) /tʃeər/ ghế
+closet = (n) /ˈklɑːzɪt/ tủ quần áo
+couch = (n) /kaʊtʃ/ ghế sofa
+curtain = (n) /ˈkɜːrtn/ rèm cửa
+desk = (n) /desk/ bàn làm việc
+dining room = (n) /ˈdaɪnɪŋ ruːm/ phòng ăn
+door = (n) /dɔːr/ cửa ra vào
+downstairs = (adv) /ˌdaʊnˈsteərz/ tầng dưới
+drawer = (n) /drɔːr/ ngăn kéo
+entrance = (n) /ˈentrəns/ lối vào
+fence = (n) /fens/ hàng rào
+floor = (n) /flɔːr/ sàn nhà
+furniture = (n) /ˈfɜːrnɪtʃər/ đồ nội thất
+garage = (n) /ɡəˈrɑːʒ/ nhà để xe
+garden = (n) /ˈɡɑːrdn/ vườn
+gate = (n) /ɡeɪt/ cổng
+hall = (n) /hɔːl/ hành lang
+home = (n) /həʊm/ nhà
+house = (n) /haʊs/ nhà
+kitchen = (n) /ˈkɪtʃən/ nhà bếp
+lamp = (n) /læmp/ đèn
+laundry = (n) /ˈlɔːndri/ phòng giặt là
+lawn = (n) /lɔːn/ bãi cỏ
+living room = (n) /ˈlɪvɪŋ ruːm/ phòng khách
+lock = (n) /lɑːk/ khóa
+mirror = (n) /ˈmɪrər/ gương
+neighborhood = (n) /ˈneɪbərhʊd/ khu phố
+pillow = (n) /ˈpɪləʊ/ gối
+roof = (n) /ruːf/ mái nhà
+room = (n) /ruːm/ phòng
+shelf = (n) /ʃelf/ kệ
+sofa = (n) /ˈsəʊfə/ ghế sofa
+stair = (n) /steər/ cầu thang
+table = (n) /ˈteɪbl/ bàn
+toilet = (n) /ˈtɔɪlət/ nhà vệ sinh
+upstairs = (adv) /ˌʌpˈsteərz/ tầng trên
+wall = (n) /wɔːl/ tường
+window = (n) /ˈwɪndəʊ/ cửa sổ
+yard = (n) /jɑːrd/ sân`,
+
+      kitchen: `blender = (n) /ˈblendər/ máy xay sinh tố
+bowl = (n) /bəʊl/ bát
+chopsticks = (n) /ˈtʃɑːpstɪks/ đua
+cup = (n) /kʌp/ cốc
+dish = (n) /dɪʃ/ đĩa
+dishwasher = (n) /ˈdɪʃwɑːʃər/ máy rửa bát
+fork = (n) /fɔːrk/ nĩa
+freezer = (n) /ˈfriːzər/ ngăn đá
+fridge = (n) /frɪdʒ/ tủ lạnh
+frying pan = (n) /ˈfraɪɪŋ pæn/ chảo rán
+glass = (n) /ɡlæs/ ly
+jar = (n) /dʒɑːr/ lọ
+kettle = (n) /ˈketl/ ấm đun nước
+knife = (n) /naɪf/ dao
+microwave = (n) /ˈmaɪkrəweɪv/ lò vi sóng
+oven = (n) /ˈʌvn/ lò nướng
+plate = (n) /pleɪt/ đĩa
+pot = (n) /pɑːt/ nồi
+refrigerator = (n) /rɪˈfrɪdʒəreɪtər/ tủ lạnh
+sink = (n) /sɪŋk/ bồn rửa
+spatula = (n) /ˈspætʃələ/ xẻng
+spoon = (n) /spuːn/ thìa
+stove = (n) /stəʊv/ bếp
+teapot = (n) /ˈtiːpɑːt/ ấm trà
+toaster = (n) /ˈtəʊstər/ lò nướng bánh mì`,
+
+      food: `apple = (n) /ˈæpl/ táo
+banana = (n) /bəˈnænə/ chuối
+beer = (n) /bɪər/ bia
+bread = (n) /bred/ bánh mì
+breakfast = (n) /ˈbrekfəst/ bữa sáng
+burger = (n) /ˈbɜːrɡər/ bánh hamburger
+butter = (n) /ˈbʌtər/ bơ
+cake = (n) /keɪk/ bánh ngọt
+candy = (n) /ˈkændi/ kẹo
+carrot = (n) /ˈkærət/ cà rốt
+cheese = (n) /tʃiːz/ phô mai
+chicken = (n) /ˈtʃɪkɪn/ thịt gà
+chocolate = (n) /ˈtʃɑːklət/ sô cô la
+coffee = (n) /ˈkɑːfi/ cà phê
+cookie = (n) /ˈkʊki/ bánh quy
+dessert = (n) /dɪˈzɜːrt/ tráng miệng
+dinner = (n) /ˈdɪnər/ bữa tối
+dish = (n) /dɪʃ/ món ăn
+egg = (n) /eɡ/ trứng
+fish = (n) /fɪʃ/ cá
+flour = (n) /ˈflaʊər/ bột mì
+food = (n) /fuːd/ thức ăn
+fruit = (n) /fruːt/ trái cây
+grape = (n) /ɡreɪp/ nho
+hamburger = (n) /ˈhæmbɜːrɡər/ bánh hamburger
+ice cream = (n) /ˌaɪs ˈkriːm/ kem
+juice = (n) /dʒuːs/ nước ép
+lunch = (n) /lʌntʃ/ bữa trưa
+meat = (n) /miːt/ thịt
+milk = (n) /mɪlk/ sữa
+noodle = (n) /ˈnuːdl/ mì
+oil = (n) /ɔɪl/ dầu ăn
+onion = (n) /ˈʌnjən/ hành tây
+orange = (n) /ˈɔːrɪndʒ/ cam
+pasta = (n) /ˈpæstə/ mì Ý
+pepper = (n) /ˈpepər/ tiêu
+pizza = (n) /ˈpiːtsə/ bánh pizza
+pork = (n) /pɔːrk/ thịt lợn
+potato = (n) /pəˈteɪtəʊ/ khoai tây
+restaurant = (n) /ˈrestrɑːnt/ nhà hàng
+rice = (n) /raɪs/ gạo, cơm
+salt = (n) /sɔːlt/ muối
+sandwich = (n) /ˈsænwɪtʃ/ bánh sandwich
+sauce = (n) /sɔːs/ nước sốt
+seafood = (n) /ˈsiːfuːd/ hải sản
+snack = (n) /snæk/ đồ ăn nhẹ
+soup = (n) /suːp/ súp
+sugar = (n) /ˈʃʊɡər/ đường
+tea = (n) /tiː/ trà
+tomato = (n) /təˈmeɪtəʊ/ cà chua
+vegetable = (n) /ˈvedʒtəbl/ rau củ
+water = (n) /ˈwɔːtər/ nước
+wine = (n) /waɪn/ rượu vang
+yogurt = (n) /ˈjəʊɡərt/ sữa chua`,
+
+      time_date: `afternoon = (n) /ˌæftərˈnuːn/ buổi chiều
+agenda = (n) /əˈdʒendə/ lịch làm việc
+April = (n) /ˈeɪprəl/ tháng 4
+August = (n) /ˈɔːɡəst/ tháng 8
+autumn = (n) /ˈɔːtəm/ mùa thu
+calendar = (n) /ˈkælɪndər/ lịch
+century = (n) /ˈsentʃəri/ thế kỷ
+date = (n) /deɪt/ ngày tháng
+day = (n) /deɪ/ ngày
+decade = (n) /ˈdekeɪd/ thập kỷ
+December = (n) /dɪˈsembər/ tháng 12
+evening = (n) /ˈiːvnɪŋ/ buổi tối
+February = (n) /ˈfebrueri/ tháng 2
+Friday = (n) /ˈfraɪdeɪ/ thứ Sáu
+hour = (n) /ˈaʊər/ giờ
+January = (n) /ˈdʒænjueri/ tháng 1
+July = (n) /dʒuˈlaɪ/ tháng 7
+June = (n) /dʒuːn/ tháng 6
+March = (n) /mɑːrtʃ/ tháng 3
+May = (n) /meɪ/ tháng 5
+midnight = (n) /ˈmɪdnaɪt/ nửa đêm
+minute = (n) /ˈmɪnɪt/ phút
+Monday = (n) /ˈmʌndeɪ/ thứ Hai
+month = (n) /mʌnθ/ tháng
+morning = (n) /ˈmɔːrnɪŋ/ buổi sáng
+night = (n) /naɪt/ đêm
+noon = (n) /nuːn/ buổi trưa
+November = (n) /nəʊˈvembər/ tháng 11
+October = (n) /ɑːkˈtəʊbər/ tháng 10
+Saturday = (n) /ˈsætərdeɪ/ thứ Bảy
+schedule = (n) /ˈʃedʒuːl/ lịch trình
+season = (n) /ˈsiːzn/ mùa
+second = (n) /ˈsekənd/ giây
+September = (n) /sepˈtembər/ tháng 9
+spring = (n) /sprɪŋ/ mùa xuân
+summer = (n) /ˈsʌmər/ mùa hè
+Sunday = (n) /ˈsʌndeɪ/ Chủ nhật
+Thursday = (n) /ˈθɜːrzdeɪ/ thứ Năm
+time = (n) /taɪm/ thời gian
+today = (n) /təˈdeɪ/ hôm nay
+tomorrow = (n) /təˈmɑːrəʊ/ ngày mai
+Tuesday = (n) /ˈtuːzdeɪ/ thứ Ba
+week = (n) /wiːk/ tuần
+Wednesday = (n) /ˈwenzdeɪ/ thứ Tư
+weekend = (n) /ˌwiːkˈend/ cuối tuần
+winter = (n) /ˈwɪntər/ mùa đông
+year = (n) /jɪər/ năm
+yesterday = (n) /ˈjestərdeɪ/ hôm qua`,
+
+      weather: `breeze = (n) /briːz/ gió nhẹ
+cloud = (n) /klaʊd/ mây
+cloudy = (adj) /ˈklaʊdi/ nhiều mây
+cold = (adj) /kəʊld/ lạnh
+cool = (adj) /kuːl/ mát mẻ
+dry = (adj) /draɪ/ khô
+fog = (n) /fɑːɡ/ sương mù
+foggy = (adj) /ˈfɑːɡi/ có sương mù
+forecast = (n) /ˈfɔːrkɑːst/ dự báo
+freeze = (v) /friːz/ đóng băng
+frost = (n) /frɔːst/ sương giá
+hail = (n) /heɪl/ mưa đá
+heat = (n) /hiːt/ sức nóng
+hot = (adj) /hɑːt/ nóng
+humid = (adj) /ˈhjuːmɪd/ ẩm ướt
+humidity = (n) /hjuːˈmɪdəti/ độ ẩm
+hurricane = (n) /ˈhʌrɪkən/ bão
+lightning = (n) /ˈlaɪtnɪŋ/ sét
+rain = (n) /reɪn/ mưa
+rainy = (adj) /ˈreɪni/ mưa
+shower = (n) /ˈʃaʊər/ mưa rào
+snow = (n) /snəʊ/ tuyết
+snowfall = (n) /ˈsnəʊfɔːl/ lượng tuyết rơi
+storm = (n) /stɔːrm/ bão
+sunny = (adj) /ˈsʌni/ nắng
+temperature = (n) /ˈtemprətʃər/ nhiệt độ
+thunder = (n) /ˈθʌndər/ sấm
+thunderstorm = (n) /ˈθʌndərstɔːrm/ bão sấm sét
+typhoon = (n) /taɪˈfuːn/ bão nhiệt đới
+warm = (adj) /wɔːrm/ ấm
+weather = (n) /ˈweðər/ thời tiết
+wind = (n) /wɪnd/ gió
+windy = (adj) /ˈwɪndi/ nhiều gió`,
+
+      travel: `abroad = (adv) /əˈbrɔːd/ nước ngoài
+accident = (n) /ˈæksɪdənt/ tai nạn
+airplane = (n) /ˈeərpleɪn/ máy bay
+airport = (n) /ˈeərpɔːrt/ sân bay
+arrival = (n) /əˈraɪvl/ sự đến
+bicycle = (n) /ˈbaɪsɪkl/ xe đạp
+boat = (n) /bəʊt/ thuyền
+bridge = (n) /brɪdʒ/ cầu
+bus = (n) /bʌs/ xe buýt
+cab = (n) /kæb/ taxi
+car = (n) /kɑːr/ xe hơi
+departure = (n) /dɪˈpɑːrtʃər/ sự khởi hành
+destination = (n) /ˌdestɪˈneɪʃn/ điểm đến
+direction = (n) /dəˈrekʃn/ hướng
+distance = (n) /ˈdɪstəns/ khoảng cách
+flight = (n) /flaɪt/ chuyến bay
+harbor = (n) /ˈhɑːrbər/ bến cảng
+helicopter = (n) /ˈhelɪkɑːptər/ trực thăng
+highway = (n) /ˈhaɪweɪ/ đường cao tốc
+hotel = (n) /həʊˈtel/ khách sạn
+journey = (n) /ˈdʒɜːrni/ hành trình
+map = (n) /mæp/ bản đồ
+motorcycle = (n) /ˈməʊtərsaɪkl/ xe máy
+parking = (n) /ˈpɑːrkɪŋ/ bãi đỗ xe
+passenger = (n) /ˈpæsɪndʒər/ hành khách
+passport = (n) /ˈpæspɔːrt/ hộ chiếu
+plane = (n) /pleɪn/ máy bay
+railway = (n) /ˈreɪlweɪ/ đường sắt
+road = (n) /rəʊd/ đường
+route = (n) /ruːt/ lộ trình
+ship = (n) /ʃɪp/ tàu thủy
+sightseeing = (n) /ˈsaɪtsiːɪŋ/ tham quan
+station = (n) /ˈsteɪʃn/ nhà ga
+taxi = (n) /ˈtæksi/ taxi
+ticket = (n) /ˈtɪkɪt/ vé
+tour = (n) /tʊər/ chuyến du lịch
+tourism = (n) /ˈtʊərɪzəm/ du lịch
+tourist = (n) /ˈtʊərɪst/ du khách
+traffic = (n) /ˈtræfɪk/ giao thông
+train = (n) /treɪn/ tàu hỏa
+travel = (v) /ˈtrævl/ du lịch
+trip = (n) /trɪp/ chuyến đi
+vacation = (n) /veɪˈkeɪʃn/ kỳ nghỉ
+vehicle = (n) /ˈviːəkl/ phương tiện giao thông
+visa = (n) /ˈviːzə/ thị thực`,
+
+      jobs: `accountant = (n) /əˈkaʊntənt/ kế toán viên
+actor = (n) /ˈæktər/ diễn viên nam
+actress = (n) /ˈæktrəs/ diễn viên nữ
+architect = (n) /ˈɑːrkɪtekt/ kiến trúc sư
+artist = (n) /ˈɑːrtɪst/ nghệ sĩ
+assistant = (n) /əˈsɪstənt/ trợ lý
+attorney = (n) /əˈtɜːrni/ luật sư
+banker = (n) /ˈbæŋkər/ nhân viên ngân hàng
+boss = (n) /bɔːs/ sếp
+businessman = (n) /ˈbɪznəsmæn/ doanh nhân
+businesswoman = (n) /ˈbɪznəsˌwʊmən/ nữ doanh nhân
+butcher = (n) /ˈbʊtʃər/ người bán thịt
+career = (n) /kəˈrɪər/ sự nghiệp
+chef = (n) /ʃef/ đầu bếp
+chemist = (n) /ˈkemɪst/ nhà hóa học
+clerk = (n) /klɜːrk/ nhân viên văn phòng
+colleague = (n) /ˈkɑːliːɡ/ đồng nghiệp
+company = (n) /ˈkʌmpəni/ công ty
+consultant = (n) /kənˈsʌltənt/ chuyên gia tư vấn
+cook = (n) /kʊk/ đầu bếp
+dentist = (n) /ˈdentɪst/ nha sĩ
+designer = (n) /dɪˈzaɪnər/ nhà thiết kế
+doctor = (n) /ˈdɑːktər/ bác sĩ
+driver = (n) /ˈdraɪvər/ tài xế
+electrician = (n) /ɪˌlekˈtrɪʃn/ thợ điện
+employee = (n) /ɪmˈplɔɪiː/ nhân viên
+employer = (n) /ɪmˈplɔɪər/ chủ lao động
+engineer = (n) /ˌendʒɪˈnɪər/ kỹ sư
+farmer = (n) /ˈfɑːrmər/ nông dân
+firefighter = (n) /ˈfaɪərˌfaɪtər/ lính cứu hỏa
+fisherman = (n) /ˈfɪʃərmən/ ngư dân
+hairdresser = (n) /ˈheərˌdresər/ thợ làm tóc
+job = (n) /dʒɑːb/ công việc
+journalist = (n) /ˈdʒɜːrnəlɪst/ nhà báo
+judge = (n) /dʒʌdʒ/ thẩm phán
+lawyer = (n) /ˈlɔːjər/ luật sư
+manager = (n) /ˈmænɪdʒər/ quản lý
+mechanic = (n) /məˈkænɪk/ thợ máy
+musician = (n) /mjuːˈzɪʃn/ nhạc sĩ
+nurse = (n) /nɜːrs/ y tá
+office = (n) /ˈɔːfɪs/ văn phòng
+officer = (n) /ˈɔːfɪsər/ sĩ quan
+painter = (n) /ˈpeɪntər/ họa sĩ
+pharmacist = (n) /ˈfɑːrməsɪst/ dược sĩ
+photographer = (n) /fəˈtɑːɡrəfər/ nhiếp ảnh gia
+pilot = (n) /ˈpaɪlət/ phi công
+plumber = (n) /ˈplʌmər/ thợ sửa ống nước
+police = (n) /pəˈliːs/ cảnh sát
+politician = (n) /ˌpɑːləˈtɪʃn/ chính trị gia
+postman = (n) /ˈpəʊstmən/ người đưa thư
+programmer = (n) /ˈprəʊɡræmər/ lập trình viên
+receptionist = (n) /rɪˈsepʃənɪst/ lễ tân
+reporter = (n) /rɪˈpɔːrtər/ phóng viên
+researcher = (n) /ˈriːsɜːrtʃər/ nhà nghiên cứu
+sailor = (n) /ˈseɪlər/ thủy thủ
+salesperson = (n) /ˈseɪlzˌpɜːrsn/ nhân viên bán hàng
+scientist = (n) /ˈsaɪəntɪst/ nhà khoa học
+secretary = (n) /ˈsekrətri/ thư ký
+singer = (n) /ˈsɪŋər/ ca sĩ
+soldier = (n) /ˈsəʊldʒər/ quân nhân
+staff = (n) /stæf/ nhân viên
+teacher = (n) /ˈtiːtʃər/ giáo viên
+technician = (n) /tekˈnɪʃn/ kỹ thuật viên
+translator = (n) /trænzˈleɪtər/ phiên dịch viên
+veterinarian = (n) /ˌvetərɪˈneəriən/ bác sĩ thú y
+waiter = (n) /ˈweɪtər/ bồi bàn nam
+waitress = (n) /ˈweɪtrəs/ bồi bàn nữ
+worker = (n) /ˈwɜːrkər/ công nhân
+writer = (n) /ˈraɪtər/ nhà văn`,
+
+      education: `academy = (n) /əˈkædəmi/ học viện
+assignment = (n) /əˈsaɪnmənt/ bài tập
+blackboard = (n) /ˈblækbɔːrd/ bảng đen
+book = (n) /bʊk/ sách
+class = (n) /klæs/ lớp học
+classroom = (n) /ˈklæsruːm/ phòng học
+college = (n) /ˈkɑːlɪdʒ/ cao đẳng
+course = (n) /kɔːrs/ khóa học
+degree = (n) /dɪˈɡriː/ bằng cấp
+desk = (n) /desk/ bàn học
+dictionary = (n) /ˈdɪkʃəneri/ từ điển
+diploma = (n) /dɪˈpləʊmə/ bằng tốt nghiệp
+education = (n) /ˌedʒuˈkeɪʃn/ giáo dục
+exam = (n) /ɪɡˈzæm/ kỳ thi
+exercise = (n) /ˈeksərsaɪz/ bài tập
+experiment = (n) /ɪkˈsperɪmənt/ thí nghiệm
+faculty = (n) /ˈfækəlti/ khoa
+geography = (n) /dʒiˈɑːɡrəfi/ địa lý
+grade = (n) /ɡreɪd/ điểm số
+graduate = (v) /ˈɡrædʒuət/ tốt nghiệp
+grammar = (n) /ˈɡræmər/ ngữ pháp
+headmaster = (n) /ˌhedˈmæstər/ hiệu trưởng nam
+headmistress = (n) /ˌhedˈmɪstrəs/ hiệu trưởng nữ
+history = (n) /ˈhɪstri/ lịch sử
+homework = (n) /ˈhəʊmwɜːrk/ bài tập về nhà
+instruction = (n) /ɪnˈstrʌkʃn/ hướng dẫn
+knowledge = (n) /ˈnɑːlɪdʒ/ kiến thức
+laboratory = (n) /ˈlæbrətɔːri/ phòng thí nghiệm
+language = (n) /ˈlæŋɡwɪdʒ/ ngôn ngữ
+lecture = (n) /ˈlektʃər/ bài giảng
+lesson = (n) /ˈlesn/ bài học
+library = (n) /ˈlaɪbrəri/ thư viện
+mathematics = (n) /ˌmæθəˈmætɪks/ toán học
+notebook = (n) /ˈnəʊtbʊk/ vở ghi
+pen = (n) /pen/ bút
+pencil = (n) /ˈpensl/ bút chì
+principal = (n) /ˈprɪnsəpl/ hiệu trưởng
+professor = (n) /prəˈfesər/ giáo sư
+pupil = (n) /ˈpjuːpl/ học sinh
+quiz = (n) /kwɪz/ bài kiểm tra
+report = (n) /rɪˈpɔːrt/ báo cáo
+research = (n) /ˈriːsɜːrtʃ/ nghiên cứu
+school = (n) /skuːl/ trường học
+science = (n) /ˈsaɪəns/ khoa học
+semester = (n) /sɪˈmestər/ học kỳ
+student = (n) /ˈstuːdnt/ sinh viên
+study = (v) /ˈstʌdi/ học tập
+subject = (n) /ˈsʌbdʒekt/ môn học
+teacher = (n) /ˈtiːtʃər/ giáo viên
+term = (n) /tɜːrm/ học kỳ
+test = (n) /test/ bài kiểm tra
+textbook = (n) /ˈtekstbʊk/ sách giáo khoa
+tutor = (n) /ˈtuːtər/ gia sư
+university = (n) /ˌjuːnɪˈvɜːrsəti/ đại học
+vocabulary = (n) /vəˈkæbjələri/ từ vựng`,
+
+      shopping: `account = (n) /əˈkaʊnt/ tài khoản
+advertisement = (n) /ədˈvɜːrtɪsmənt/ quảng cáo
+afford = (v) /əˈfɔːrd/ có đủ khả năng chi trả
+ATM = (n) /ˌeɪ tiː ˈem/ máy rút tiền tự động
+bank = (n) /bæŋk/ ngân hàng
+bargain = (n) /ˈbɑːrɡən/ món hời
+bill = (n) /bɪl/ hóa đơn
+brand = (n) /brænd/ nhãn hiệu
+budget = (n) /ˈbʌdʒɪt/ ngân sách
+buy = (v) /baɪ/ mua
+cash = (n) /kæʃ/ tiền mặt
+cent = (n) /sent/ xu
+change = (n) /tʃeɪndʒ/ tiền thối lại
+cheap = (adj) /tʃiːp/ rẻ
+check = (n) /tʃek/ séc
+coin = (n) /kɔɪn/ tiền xu
+consumer = (n) /kənˈsuːmər/ người tiêu dùng
+cost = (n) /kɔːst/ giá cả
+credit card = (n) /ˈkredɪt kɑːrd/ thẻ tín dụng
+currency = (n) /ˈkɜːrənsi/ tiền tệ
+customer = (n) /ˈkʌstəmər/ khách hàng
+debit card = (n) /ˈdebɪt kɑːrd/ thẻ ghi nợ
+debt = (n) /det/ nợ
+deposit = (n) /dɪˈpɑːzɪt/ tiền gửi
+discount = (n) /ˈdɪskaʊnt/ giảm giá
+dollar = (n) /ˈdɑːlər/ đô la
+euro = (n) /ˈjʊərəʊ/ đồng euro
+exchange = (n) /ɪksˈtʃeɪndʒ/ hối đoái
+expensive = (adj) /ɪkˈspensɪv/ đắt
+fee = (n) /fiː/ phí
+goods = (n) /ɡʊdz/ hàng hóa
+loan = (n) /ləʊn/ khoản vay
+mall = (n) /mɔːl/ trung tâm mua sắm
+market = (n) /ˈmɑːrkɪt/ chợ
+money = (n) /ˈmʌni/ tiền
+note = (n) /nəʊt/ tiền giấy
+pay = (v) /peɪ/ trả tiền
+payment = (n) /ˈpeɪmənt/ sự thanh toán
+price = (n) /praɪs/ giá cả
+product = (n) /ˈprɑːdʌkt/ sản phẩm
+purchase = (v) /ˈpɜːrtʃəs/ mua
+receipt = (n) /rɪˈsiːt/ hóa đơn
+refund = (n) /ˈriːfʌnd/ hoàn tiền
+rent = (v) /rent/ tiền thuê
+sale = (n) /seɪl/ bán hàng
+save = (v) /seɪv/ tiết kiệm
+sell = (v) /sel/ bán
+shop = (n) /ʃɑːp/ cửa hàng
+shopper = (n) /ˈʃɑːpər/ người mua sắm
+shopping = (n) /ˈʃɑːpɪŋ/ mua sắm
+spend = (v) /spend/ chi tiêu
+store = (n) /stɔːr/ cửa hàng
+supermarket = (n) /ˈsuːpərˌmɑːrkɪt/ siêu thị
+tax = (n) /tæks/ thuế
+wallet = (n) /ˈwɑːlɪt/ ví`,
+
+      tech: `application = (n) /ˌæplɪˈkeɪʃn/ ứng dụng
+battery = (n) /ˈbætəri/ pin
+blog = (n) /blɑːɡ/ blog
+bluetooth = (n) /ˈbluːtuːθ/ bluetooth
+browser = (n) /ˈbraʊzər/ trình duyệt
+button = (n) /ˈbʌtn/ nút bấm
+cable = (n) /ˈkeɪbl/ dây cáp
+camera = (n) /ˈkæmərə/ máy ảnh
+click = (v) /klɪk/ nhấp chuột
+computer = (n) /kəmˈpjuːtər/ máy tính
+connect = (v) /kəˈnekt/ kết nối
+cursor = (n) /ˈkɜːrsər/ con trỏ
+data = (n) /ˈdeɪtə/ dữ liệu
+delete = (v) /dɪˈliːt/ xóa
+desktop = (n) /ˈdesktɑːp/ máy tính để bàn
+device = (n) /dɪˈvaɪs/ thiết bị
+digital = (adj) /ˈdɪdʒɪtl/ kỹ thuật số
+document = (n) /ˈdɑːkjumənt/ tài liệu
+download = (v) /ˌdaʊnˈləʊd/ tải xuống
+email = (n) /ˈiːmeɪl/ thư điện tử
+file = (n) /faɪl/ tập tin
+folder = (n) /ˈfəʊldər/ thư mục
+hardware = (n) /ˈhɑːrdweər/ phần cứng
+headphone = (n) /ˈhedfəʊn/ tai nghe
+icon = (n) /ˈaɪkɑːn/ biểu tượng
+internet = (n) /ˈɪntərnet/ internet
+keyboard = (n) /ˈkiːbɔːrd/ bàn phím
+laptop = (n) /ˈlæptɑːp/ máy tính xách tay
+link = (n) /lɪŋk/ liên kết
+login = (n) /ˈlɑːɡɪn/ đăng nhập
+memory = (n) /ˈmeməri/ bộ nhớ
+message = (n) /ˈmesɪdʒ/ tin nhắn
+mobile = (adj) /ˈməʊbaɪl/ di động
+monitor = (n) /ˈmɑːnɪtər/ màn hình
+mouse = (n) /maʊs/ chuột máy tính
+network = (n) /ˈnetwɜːrk/ mạng
+offline = (adj) /ˌɑːfˈlaɪn/ ngoại tuyến
+online = (adj) /ˈɑːnlaɪn/ trực tuyến
+password = (n) /ˈpæswɜːrd/ mật khẩu
+phone = (n) /fəʊn/ điện thoại
+printer = (n) /ˈprɪntər/ máy in
+program = (n) /ˈprəʊɡræm/ chương trình
+screen = (n) /skriːn/ màn hình
+search = (v) /sɜːrtʃ/ tìm kiếm
+selfie = (n) /ˈselfi/ ảnh tự sướng
+server = (n) /ˈsɜːrvər/ máy chủ
+smartphone = (n) /ˈsmɑːrtfəʊn/ điện thoại thông minh`,
+
+      business: `agenda = (n) /əˈdʒendə/ chương trình nghị sự
+agreement = (n) /əˈɡriːmənt/ thỏa thuận
+appointment = (n) /əˈpɔɪntmənt/ cuộc hẹn
+business = (n) /ˈbɪznəs/ kinh doanh
+career = (n) /kəˈrɪər/ sự nghiệp
+client = (n) /ˈklaɪənt/ khách hàng
+colleague = (n) /ˈkɑːliːɡ/ đồng nghiệp
+commerce = (n) /ˈkɑːmɜːrs/ thương mại
+company = (n) /ˈkʌmpəni/ công ty
+competition = (n) /ˌkɑːmpəˈtɪʃn/ sự cạnh tranh
+conference = (n) /ˈkɑːnfərəns/ hội nghị
+contract = (n) /ˈkɑːntrækt/ hợp đồng
+deadline = (n) /ˈdedlaɪn/ thời hạn
+department = (n) /dɪˈpɑːrtmənt/ phòng ban
+document = (n) /ˈdɑːkjumənt/ tài liệu
+employee = (n) /ɪmˈplɔɪiː/ nhân viên
+employer = (n) /ɪmˈplɔɪər/ người chủ
+enterprise = (n) /ˈentərpraɪz/ doanh nghiệp
+entrepreneur = (n) /ˌɑːntrəprəˈnɜːr/ doanh nhân
+export = (v) /ˈekspɔːrt/ xuất khẩu
+income = (n) /ˈɪnkʌm/ thu nhập
+industry = (n) /ˈɪndəstri/ ngành công nghiệp
+interview = (n) /ˈɪntərvjuː/ phỏng vấn
+invest = (v) /ɪnˈvest/ đầu tư
+investment = (n) /ɪnˈvestmənt/ sự đầu tư
+management = (n) /ˈmænɪdʒmənt/ quản lý
+market = (n) /ˈmɑːrkɪt/ thị trường
+meeting = (n) /ˈmiːtɪŋ/ cuộc họp
+memo = (n) /ˈmeməʊ/ bản ghi nhớ
+negotiate = (v) /nɪˈɡəʊʃieɪt/ đàm phán
+network = (n) /ˈnetwɜːrk/ mạng lưới
+office = (n) /ˈɔːfɪs/ văn phòng
+overtime = (n) /ˈəʊvərtaɪm/ làm thêm giờ
+paperwork = (n) /ˈpeɪpərwɜːrk/ giấy tờ
+partner = (n) /ˈpɑːrtnər/ đối tác
+printer = (n) /ˈprɪntər/ máy in
+profit = (n) /ˈprɑːfɪt/ lợi nhuận
+project = (n) /ˈprɑːdʒekt/ dự án
+promotion = (n) /prəˈməʊʃn/ thăng chức
+report = (n) /rɪˈpɔːrt/ báo cáo
+resign = (v) /rɪˈzaɪn/ từ chức
+resume = (n) /ˈrezʊmeɪ/ sơ yếu lý lịch
+salary = (n) /ˈsæləri/ lương
+secretary = (n) /ˈsekrətri/ thư ký
+shareholder = (n) /ˈʃeərˌhəʊldər/ cổ đông
+sponsor = (n) /ˈspɑːnsər/ nhà tài trợ
+staff = (n) /stæf/ nhân viên
+strategy = (n) /ˈstrætədʒi/ chiến lược
+success = (n) /səkˈses/ thành công
+trade = (n) /treɪd/ thương mại`,
+
+      adjectives: `beautiful = (adj) /ˈbjuːtəfl/ đẹp
+big = (adj) /bɪɡ/ to, lớn
+clean = (adj) /kliːn/ sạch sẽ
+clever = (adj) /ˈklevər/ thông minh
+cold = (adj) /koʊld/ lạnh
+cute = (adj) /kjuːt/ dễ thương
+dangerous = (adj) /ˈdeɪndʒərəs/ nguy hiểm
+dark = (adj) /dɑːrk/ tối
+delicious = (adj) /dɪˈlɪʃəs/ ngon
+difficult = (adj) /ˈdɪfɪkəlt/ khó
+dirty = (adj) /ˈdɜːrti/ bẩn
+easy = (adj) /ˈiːzi/ dễ
+empty = (adj) /ˈempti/ trống rỗng
+expensive = (adj) /ɪkˈspensɪv/ đắt
+famous = (adj) /ˈfeɪməs/ nổi tiếng
+fast = (adj) /fæst/ nhanh
+free = (adj) /friː/ miễn phí, tự do
+fresh = (adj) /freʃ/ tươi
+full = (adj) /fʊl/ đầy
+good = (adj) /ɡʊd/ tốt
+great = (adj) /ɡreɪt/ tuyệt vời
+happy = (adj) /ˈhæpi/ hạnh phúc
+hard = (adj) /hɑːrd/ cứng, khó
+heavy = (adj) /ˈhevi/ nặng
+high = (adj) /haɪ/ cao
+hot = (adj) /hɒt/ nóng
+important = (adj) /ɪmˈpɔːrtnt/ quan trọng
+interesting = (adj) /ˈɪntrəstɪŋ/ thú vị
+large = (adj) /lɑːrdʒ/ lớn
+light = (adj) /laɪt/ nhẹ, sáng
+long = (adj) /lɒŋ/ dài
+low = (adj) /loʊ/ thấp
+modern = (adj) /ˈmɒdərn/ hiện đại
+new = (adj) /njuː/ mới
+nice = (adj) /naɪs/ đẹp, tốt
+old = (adj) /oʊld/ cũ, già
+poor = (adj) /pʊr/ nghèo
+popular = (adj) /ˈpɒpjələr/ phổ biến
+quick = (adj) /kwɪk/ nhanh
+rich = (adj) /rɪtʃ/ giàu
+sad = (adj) /sæd/ buồn
+short = (adj) /ʃɔːrt/ ngắn, thấp
+slow = (adj) /sloʊ/ chậm
+small = (adj) /smɔːl/ nhỏ
+smart = (adj) /smɑːrt/ thông minh
+strong = (adj) /strɒŋ/ mạnh mẽ
+tall = (adj) /tɔːl/ cao
+thick = (adj) /θɪk/ dày
+thin = (adj) /θɪn/ mỏng, gầy
+tired = (adj) /ˈtaɪərd/ mệt mỏi
+ugly = (adj) /ˈʌɡli/ xấu xí
+weak = (adj) /wiːk/ yếu
+young = (adj) /jʌŋ/ trẻ`,
+
+      tenses: `Present Simple = Thì hiện tại đơn (diễn tả thói quen, sự thật hiển nhiên)
+Present Continuous = Thì hiện tại tiếp diễn (diễn tả hành động đang xảy ra)
+Present Perfect = Thì hiện tại hoàn thành (hành động bắt đầu ở quá khứ kéo dài đến hiện tại)
+Past Simple = Thì quá khứ đơn (hành động đã kết thúc trong quá khứ)
+Past Continuous = Thì quá khứ tiếp diễn (hành động đang xảy ra tại 1 thời điểm quá khứ)
+Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc phát)`
+    };
+
+    let quizData = [];
+    let currentIndex = 0;
+    let score = 0;
+    let mode = 'type';
+    let wrongAnswers = [];
+    let isChecked = false;
+    let activePresetName = 'family';
+    let autosaveTimeout = null;
+
+    let tableRowsData = [];
+    let currentViewMode = 'table';
+
+    // ===== BUILT-IN IPA DICTIONARY (Offline, 500+ common words) =====
+    const IPA_DICT = {
+      // Body Parts & Organs
+      'arm': '/ɑːrm/', 'armpit': '/ˈɑːrmpɪt/', 'ankle': '/ˈæŋkəl/',
+      'back': '/bæk/', 'beard': '/bɪərd/', 'blood': '/blʌd/',
+      'bone': '/bəʊn/', 'brain': '/breɪn/', 'breast': '/brest/',
+      'buttocks': '/ˈbʌtəks/', 'calf': '/kɑːf/', 'chest': '/tʃest/',
+      'chin': '/tʃɪn/', 'cheek': '/tʃiːk/', 'ear': '/ɪər/',
+      'elbow': '/ˈelbəʊ/', 'eye': '/aɪ/', 'eyebrow': '/ˈaɪbraʊ/',
+      'eyelash': '/ˈaɪlæʃ/', 'eyelid': '/ˈaɪlɪd/', 'face': '/feɪs/',
+      'finger': '/ˈfɪŋɡər/', 'fingernail': '/ˈfɪŋɡərneɪl/', 'fist': '/fɪst/',
+      'foot': '/fʊt/', 'feet': '/fiːt/', 'forearm': '/ˈfɔːrɑːrm/',
+      'forehead': '/ˈfɔːrhed/', 'hair': '/heər/', 'hand': '/hænd/',
+      'head': '/hed/', 'heart': '/hɑːrt/', 'heel': '/hiːl/',
+      'hip': '/hɪp/', 'jaw': '/dʒɔː/', 'kidney': '/ˈkɪdni/',
+      'knee': '/niː/', 'leg': '/leɡ/', 'lip': '/lɪp/',
+      'liver': '/ˈlɪvər/', 'lungs': '/lʌŋz/', 'mouth': '/maʊθ/',
+      'muscle': '/ˈmʌsəl/', 'nail': '/neɪl/', 'neck': '/nek/',
+      'nose': '/nəʊz/', 'nostril': '/ˈnɒstrəl/', 'palm': '/pɑːm/',
+      'rib': '/rɪb/', 'shoulder': '/ˈʃəʊldər/', 'skin': '/skɪn/',
+      'skull': '/skʌl/', 'sole': '/səʊl/', 'spine': '/spaɪn/',
+      'stomach': '/ˈstʌmək/', 'teeth': '/tiːθ/', 'thigh': '/θaɪ/',
+      'throat': '/θrəʊt/', 'thumb': '/θʌm/', 'toe': '/təʊ/',
+      'toenail': '/ˈtəʊneɪl/', 'tongue': '/tʌŋ/', 'tooth': '/tuːθ/',
+      'vein': '/veɪn/', 'waist': '/weɪst/', 'wrist': '/rɪst/',
+
+      // Family & People
+      'baby': '/ˈbeɪbi/', 'mother': '/ˈmʌðər/', 'father': '/ˈfɑːðər/',
+      'sister': '/ˈsɪstər/', 'brother': '/ˈbrʌðər/', 'child': '/tʃaɪld/',
+      'son': '/sʌn/', 'daughter': '/ˈdɔːtər/', 'nephew': '/ˈnefjuː/',
+      'niece': '/niːs/', 'widow': '/ˈwɪdəʊ/', 'aunt': '/ɑːnt/',
+      'uncle': '/ˈʌŋkəl/', 'grandfather': '/ˈɡrændfɑːðər/',
+      'grandmother': '/ˈɡrændmʌðər/', 'parents': '/ˈpeərənts/',
+      'husband': '/ˈhʌzbənd/', 'wife': '/waɪf/', 'cousin': '/ˈkʌzən/',
+      'family': '/ˈfæməli/', 'grandparents': '/ˈɡrændpeərənts/',
+      'grandson': '/ˈɡrænsʌn/', 'granddaughter': '/ˈɡrændɔːtər/',
+      'sibling': '/ˈsɪblɪŋ/', 'twin': '/twɪn/', 'stepfather': '/ˈstepfɑːðər/',
+      'stepmother': '/ˈstepmʌðər/', 'elderly': '/ˈeldərli/',
+      // Months
+      'january': '/ˈdʒænjuəri/', 'february': '/ˈfebruəri/', 'march': '/mɑːrtʃ/',
+      'april': '/ˈeɪprəl/', 'may': '/meɪ/', 'june': '/dʒuːn/',
+      'july': '/dʒuːˈlaɪ/', 'august': '/ˈɔːɡəst/', 'september': '/sepˈtembər/',
+      'october': '/ɒkˈtəʊbər/', 'november': '/nəʊˈvembər/', 'december': '/dɪˈsembər/',
+      // Seasons
+      'spring': '/sprɪŋ/', 'summer': '/ˈsʌmər/', 'autumn': '/ˈɔːtəm/',
+      'fall': '/fɔːl/', 'winter': '/ˈwɪntər/',
+      // Colors
+      'red': '/red/', 'blue': '/bluː/', 'green': '/ɡriːn/',
+      'yellow': '/ˈjeləʊ/', 'orange': '/ˈɒrɪndʒ/', 'purple': '/ˈpɜːpl/',
+      'pink': '/pɪŋk/', 'black': '/blæk/', 'white': '/waɪt/',
+      'brown': '/braʊn/', 'grey': '/ɡreɪ/', 'gray': '/ɡreɪ/',
+      'violet': '/ˈvaɪələt/', 'indigo': '/ˈɪndɪɡəʊ/',
+      // Animals
+      'cat': '/kæt/', 'dog': '/dɒɡ/', 'bird': '/bɜːrd/',
+      'fish': '/fɪʃ/', 'horse': '/hɔːrs/', 'cow': '/kaʊ/',
+      'pig': '/pɪɡ/', 'sheep': '/ʃiːp/', 'chicken': '/ˈtʃɪkɪn/',
+      'duck': '/dʌk/', 'lion': '/ˈlaɪən/', 'tiger': '/ˈtaɪɡər/',
+      'elephant': '/ˈelɪfənt/', 'monkey': '/ˈmʌŋki/', 'snake': '/sneɪk/',
+      'rabbit': '/ˈræbɪt/', 'bear': '/beər/', 'wolf': '/wʊlf/',
+      // Food
+      'apple': '/ˈæpəl/', 'banana': '/bəˈnɑːnə/', 'orange': '/ˈɒrɪndʒ/',
+      'rice': '/raɪs/', 'bread': '/bred/', 'egg': '/eɡ/',
+      'milk': '/mɪlk/', 'water': '/ˈwɔːtər/', 'tea': '/tiː/',
+      'coffee': '/ˈkɒfi/', 'sugar': '/ˈʃʊɡər/', 'salt': '/sɔːlt/',
+      'meat': '/miːt/', 'fish': '/fɪʃ/', 'vegetable': '/ˈvedʒtəbəl/',
+      'fruit': '/fruːt/', 'cake': '/keɪk/', 'soup': '/suːp/',
+      // Common adjectives
+      'good': '/ɡʊd/', 'bad': '/bæd/', 'big': '/bɪɡ/',
+      'small': '/smɔːl/', 'fast': '/fɑːst/', 'slow': '/sləʊ/',
+      'hot': '/hɒt/', 'cold': '/kəʊld/', 'new': '/njuː/',
+      'old': '/əʊld/', 'beautiful': '/ˈbjuːtɪfəl/', 'happy': '/ˈhæpi/',
+      'sad': '/sæd/', 'angry': '/ˈæŋɡri/', 'tired': '/ˈtaɪərd/',
+      'hungry': '/ˈhʌŋɡri/', 'strong': '/strɒŋ/', 'weak': '/wiːk/',
+      'tall': '/tɔːl/', 'short': '/ʃɔːt/', 'long': '/lɒŋ/',
+      'easy': '/ˈiːzi/', 'hard': '/hɑːrd/', 'rich': '/rɪtʃ/', 'poor': '/pʊər/',
+      // Common verbs
+      'run': '/rʌn/', 'walk': '/wɔːk/', 'eat': '/iːt/',
+      'drink': '/drɪŋk/', 'sleep': '/sliːp/', 'work': '/wɜːrk/',
+      'play': '/pleɪ/', 'read': '/riːd/', 'write': '/raɪt/',
+      'speak': '/spiːk/', 'listen': '/ˈlɪsən/', 'watch': '/wɒtʃ/',
+      'study': '/ˈstʌdi/', 'learn': '/lɜːrn/', 'teach': '/tiːtʃ/',
+      'go': '/ɡəʊ/', 'come': '/kʌm/', 'know': '/nəʊ/',
+      'think': '/θɪŋk/', 'love': '/lʌv/', 'like': '/laɪk/',
+      'want': '/wɒnt/', 'need': '/niːd/', 'give': '/ɡɪv/',
+      'take': '/teɪk/', 'make': '/meɪk/', 'see': '/siː/',
+      'look': '/lʊk/', 'buy': '/baɪ/', 'sell': '/sel/',
+      // Places
+      'school': '/skuːl/', 'house': '/haʊs/', 'hospital': '/ˈhɒspɪtəl/',
+      'market': '/ˈmɑːrkɪt/', 'park': '/pɑːrk/', 'airport': '/ˈeərpɔːrt/',
+      'hotel': '/həʊˈtel/', 'bank': '/bæŋk/', 'library': '/ˈlaɪbrəri/',
+      // Prepositions & Numbers
+      'in': '/ɪn/', 'on': '/ɒn/', 'at': '/æt/', 'under': '/ˈʌndər/',
+      'one': '/wʌn/', 'two': '/tuː/', 'three': '/θriː/', 'four': '/fɔːr/'
+    };
+
+    // Offline Vietnamese Translation Override Dictionary for Clean Terms
+    const VI_DICT = {
+      'arm': 'cánh tay', 'back': 'lưng', 'ankle': 'mắt cá chân',
+      'blood': 'máu', 'bone': 'xương', 'beard': 'râu',
+      'chest': 'ngực / lồng ngực', 'elbow': 'khuỷu tay',
+      'knee': 'đầu gối', 'shoulder': 'vai', 'stomach': 'bụng / dạ dày',
+      'throat': 'cổ họng', 'wrist': 'cổ tay', 'thigh': 'đùi',
+      'toe': 'ngón chân', 'finger': 'ngón tay', 'thumb': 'ngón tay cái',
+      'foot': 'bàn chân', 'feet': 'bàn chân', 'face': 'khuôn mặt',
+      'head': 'đầu', 'hair': 'tóc', 'eye': 'mắt', 'ear': 'tai',
+      'nose': 'mũi', 'mouth': 'miệng', 'lip': 'môi', 'tooth': 'răng'
+    };
+
+    function switchView(mode) {
+      currentViewMode = mode;
+      const tableBtn = document.getElementById('tab-table-btn');
+      const textBtn = document.getElementById('tab-text-btn');
+      const tableCont = document.getElementById('table-view-container');
+      const textCont = document.getElementById('text-view-container');
+
+      if (mode === 'table') {
+        syncTextareaToTable();
+        tableBtn.classList.add('active');
+        textBtn.classList.remove('active');
+        tableCont.style.display = 'block';
+        textCont.style.display = 'none';
+      } else {
+        syncTableToTextarea();
+        textBtn.classList.add('active');
+        tableBtn.classList.remove('active');
+        textCont.style.display = 'block';
+        tableCont.style.display = 'none';
+      }
+    }
+
+    function parseLineToRow(line) {
+      line = line.trim();
+      if (!line) return null;
+
+      let word = line;
+      let val = '';
+      if (line.includes('=')) {
+        const parts = line.split('=');
+        word = parts[0].trim();
+        val = parts.slice(1).join('=').trim();
+      } else if (line.includes(':')) {
+        const parts = line.split(':');
+        word = parts[0].trim();
+        val = parts.slice(1).join(':').trim();
+      }
+
+      let pos = '';
+      let ipa = '';
+      let meaning = val;
+
+      // Extract POS e.g. (n), (v), (adj), (n, v, adj) - chỉ lấy từ loại đầu tiên
+      const posMatch = val.match(/\((n|v|adj|adv|prep|pron|conj|interj)[^)]*\)/i);
+      if (posMatch) {
+        pos = posMatch[1].toLowerCase();
+        meaning = meaning.replace(posMatch[0], '').trim();
+      }
+
+      // Extract IPA: ký tự đầu tiên sau / không được là khoảng trắng
+      // Loại bỏ "/ Bác /" (tiếng Việt) nhưng giữ "/blæk/", "/red/", "/ˈbeɪbi/"
+      const ipaRe = /\/([^\s\/][^\/]{0,35}?)\//;
+      const ipaM = meaning.match(ipaRe);
+      if (ipaM) {
+        const candidate = ipaM[1];
+        // Chấp nhận nếu có ký tự IPA thật hoặc là từ ASCII đơn giản
+        const hasIpa = /[əɪɑɒɔɜæʌʊɛɐˈˌŋʃʒθðːɟɥɹɣ]/.test(candidate);
+        const isSimple = /^[\w']+$/.test(candidate);
+        if (hasIpa || isSimple) {
+          ipa = `/${candidate}/`;
+          meaning = meaning.replace(ipaM[0], '').trim();
+        }
+      }
+
+      // Fallback: tra bảng IPA offline nếu chưa có
+      if (!ipa) {
+        const lookup = (word || '').toLowerCase().trim();
+        if (IPA_DICT[lookup]) ipa = IPA_DICT[lookup];
+      }
+
+      // Dịn sạch: xóa bất kỳ /.../ nào còn sót ở đầu chuỗi meaning
+      meaning = meaning.replace(/^\/[^\s\/][^\/]{0,35}?\/\s*/, '').trim();
+
+      return { word, pos, ipa, meaning };
+    }
+
+    // Phím Enter trong bảng: tự động xuống hàng tiếp theo hoặc thêm hàng mới
+    function handleTableKeydown(e, idx) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (idx >= tableRowsData.length - 1) {
+          tableRowsData.push({ word: '', pos: '', ipa: '', meaning: '' });
+          renderTable();
+        }
+        setTimeout(() => {
+          const wordInputs = document.querySelectorAll('#vocab-table-body tr td:first-child input');
+          if (wordInputs[idx + 1]) wordInputs[idx + 1].focus();
+        }, 30);
+      }
+    }
+
+    function syncTextareaToTable() {
+      const text = document.getElementById('data-input').value;
+      const lines = text.split('\n');
+      tableRowsData = [];
+
+      lines.forEach(line => {
+        const parsed = parseLineToRow(line);
+        if (parsed) tableRowsData.push(parsed);
+      });
+
+      if (tableRowsData.length === 0) {
+        tableRowsData.push({ word: '', pos: '', ipa: '', meaning: '' });
+      }
+
+      renderTable();
+    }
+
+    function syncTableToTextarea() {
+      const lines = tableRowsData
+        .filter(r => r.word.trim().length > 0)
+        .map(r => {
+          let extra = '';
+          if (r.pos) extra += `(${r.pos}) `;
+          if (r.ipa) extra += `${r.ipa} `;
+          return `${r.word} = ${extra}${r.meaning}`.trim();
+        });
+
+      document.getElementById('data-input').value = lines.join('\n');
+      onTextareaInput();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('vocab-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      tableRowsData.forEach((row, idx) => {
+        const tr = document.createElement('tr');
+        const displayPos = (row.pos || '').split(/[\/,\s]/)[0].trim();
+
+        tr.innerHTML = `
+          <td><input type="text" class="cell-input" style="font-weight:600;" value="${row.word}" 
+            oninput="updateTableCell(${idx}, 'word', this.value)"
+            onkeydown="handleTableKeydown(event, ${idx})"
+            placeholder="Từ vựng..."></td>
+          <td><input type="text" class="cell-input pos-badge" value="${displayPos}" oninput="updateTableCell(${idx}, 'pos', this.value)" placeholder="n/v/adj"></td>
+          <td><input type="text" class="cell-input phonetic-text" value="${row.ipa}" oninput="updateTableCell(${idx}, 'ipa', this.value)" placeholder="/.../"></td>
+          <td><input type="text" class="cell-input" style="text-align:left; padding-left:0.5rem;" value="${row.meaning}" oninput="updateTableCell(${idx}, 'meaning', this.value)" placeholder="Ý nghĩa tiếng Việt..."></td>
+          <td><button type="button" onclick="deleteTableRow(${idx})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:1.1rem;" title="Xóa hàng">🗑️</button></td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateTableCell(idx, field, val) {
+      if (tableRowsData[idx]) {
+        tableRowsData[idx][field] = val;
+        syncTableToTextarea();
+      }
+    }
+
+    function addTableRow() {
+      tableRowsData.push({ word: '', pos: '', ipa: '', meaning: '' });
+      renderTable();
+    }
+
+    function deleteTableRow(idx) {
+      tableRowsData.splice(idx, 1);
+      if (tableRowsData.length === 0) {
+        tableRowsData.push({ word: '', pos: '', ipa: '', meaning: '' });
+      }
+      renderTable();
+      syncTableToTextarea();
+    }
+
+    // Preset selection mode
+    let isMultiSelectMode = false;
+    let selectedPresetNames = new Set(['family']);
+
+    function toggleMultiSelectMode() {
+      isMultiSelectMode = !isMultiSelectMode;
+      const toggleBtn = document.getElementById('toggle-multi-btn');
+      const multiControls = document.getElementById('multi-controls');
+
+      if (isMultiSelectMode) {
+        toggleBtn.style.background = 'rgba(236, 72, 153, 0.25)';
+        toggleBtn.style.borderColor = 'var(--accent-pink)';
+        toggleBtn.style.color = '#f472b6';
+        toggleBtn.innerText = '✔️ Đang Trộn Nhiều Bộ Đề';
+        multiControls.style.display = 'flex';
+      } else {
+        toggleBtn.style.background = 'rgba(139, 92, 246, 0.15)';
+        toggleBtn.style.borderColor = 'rgba(139, 92, 246, 0.4)';
+        toggleBtn.style.color = '#a78bfa';
+        toggleBtn.innerText = '🔀 Bật Trộn Nhiều Bộ Đề';
+        multiControls.style.display = 'none';
+
+        const firstActive = activePresetName || Array.from(selectedPresetNames)[0] || 'family';
+        selectedPresetNames = new Set([firstActive]);
+      }
+      renderPresetButtons();
+      combineSelectedPresetsToTable();
+    }
+
+    function onPresetClick(name) {
+      if (isMultiSelectMode) {
+        if (selectedPresetNames.has(name)) {
+          if (selectedPresetNames.size > 1) {
+            selectedPresetNames.delete(name);
+          }
+        } else {
+          selectedPresetNames.add(name);
+        }
+        activePresetName = name;
+      } else {
+        selectedPresetNames = new Set([name]);
+        activePresetName = name;
+      }
+      updatePresetsUI();
+      combineSelectedPresetsToTable();
+    }
+
+    function selectAllPresets(selectAll) {
+      const allNames = Object.keys(PRESETS);
+      const customDecks = JSON.parse(localStorage.getItem('custom_presets') || '{}');
+      for (const k in customDecks) allNames.push(k);
+
+      if (selectAll) {
+        selectedPresetNames = new Set(allNames);
+      } else {
+        selectedPresetNames = new Set(['family']);
+      }
+      updatePresetsUI();
+      combineSelectedPresetsToTable();
+    }
+
+    function combineSelectedPresetsToTable() {
+      isTableExpanded = false; // Reset thu gọn khi đổi bộ đề
+      const customDecks = JSON.parse(localStorage.getItem('custom_presets') || '{}');
+      let combinedTextLines = [];
+
+      selectedPresetNames.forEach(name => {
+        let content = PRESETS[name] || customDecks[name] || '';
+        if (content) {
+          combinedTextLines.push(content.trim());
+        }
+      });
+
+      document.getElementById('data-input').value = combinedTextLines.join('\n');
+      syncTextareaToTable();
+    }
+
+    function updatePresetsUI() {
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        const name = btn.getAttribute('data-name');
+        const chk = btn.querySelector('input[type="checkbox"]');
+        if (selectedPresetNames.has(name)) {
+          btn.style.borderColor = 'var(--accent-purple)';
+          btn.style.background = 'rgba(139, 92, 246, 0.25)';
+          if (chk) chk.checked = true;
+        } else {
+          btn.style.borderColor = 'var(--card-border)';
+          btn.style.background = 'rgba(255, 255, 255, 0.05)';
+          if (chk) chk.checked = false;
+        }
+      });
+    }
+
+    function onTextareaInput() {
+      clearTimeout(autosaveTimeout);
+      autosaveTimeout = setTimeout(() => {
+        const val = document.getElementById('data-input').value;
+        const customDecks = JSON.parse(localStorage.getItem('custom_presets') || '{}');
+
+        // Tự động lưu nếu đang chỉnh sửa 1 bộ đề tùy chỉnh
+        if (activePresetName && customDecks[activePresetName] !== undefined) {
+          customDecks[activePresetName] = val;
+          localStorage.setItem('custom_presets', JSON.stringify(customDecks));
+          showAutosaveBadge();
+        }
+      }, 300);
+    }
+
+    function showAutosaveBadge() {
+      const statusEl = document.getElementById('autosave-status');
+      if (statusEl) {
+        statusEl.style.opacity = '1';
+        setTimeout(() => {
+          statusEl.style.opacity = '0';
+        }, 1500);
+      }
+    }
+
+    function saveCustomPreset() {
+      const text = document.getElementById('data-input').value.trim();
+      if (!text) {
+        alert('Vui lòng nhập danh sách từ vựng trước khi thêm bộ đề mới!');
+        return;
+      }
+      const title = prompt('Nhập tên cho Bộ Đề Mới này (ví dụ: Cơ Thể Người 2, Công Việc, Du Lịch...):');
+      if (!title || !title.trim()) return;
+
+      const name = title.trim();
+      const customDecks = JSON.parse(localStorage.getItem('custom_presets') || '{}');
+      customDecks[name] = text;
+      localStorage.setItem('custom_presets', JSON.stringify(customDecks));
+
+      selectedPresetNames = new Set([name]); // Tự động chọn duy nhất bộ đề mới vừa tạo!
+      activePresetName = name;
+      renderPresetButtons();
+      combineSelectedPresetsToTable();
+      showAutosaveBadge();
+      alert(`🎉 Đã thêm thành công Bộ Đề Mới "${name}" vào danh sách!`);
+    }
+
+    function deleteCustomPreset(name, e) {
+      e.stopPropagation();
+      if (confirm(`Bạn có chắc muốn xóa bộ đề "${name}"?`)) {
+        const customDecks = JSON.parse(localStorage.getItem('custom_presets') || '{}');
+        delete customDecks[name];
+        localStorage.setItem('custom_presets', JSON.stringify(customDecks));
+        selectedPresetNames.delete(name);
+        if (selectedPresetNames.size === 0) selectedPresetNames = new Set(['family']);
+        if (activePresetName === name) activePresetName = 'family';
+        renderPresetButtons();
+        combineSelectedPresetsToTable();
+      }
+    }
+
+    function renderPresetButtons() {
+      const grid = document.getElementById('presets-grid');
+      const builtIns = [
+        { id: 'family', label: '👨‍👩‍👧 Gia Đình' },
+        { id: 'body', label: '🫀 Cơ Thể Người' },
+        { id: 'clothes', label: '👕 Quần Áo & Thời Trang' },
+        { id: 'colors', label: '🎨 Màu Sắc' },
+        { id: 'house', label: '🏠 Nhà Cửa' },
+        { id: 'kitchen', label: '🍳 Đồ Dùng Bếp' },
+        { id: 'food', label: '🍔 Thức Ăn & Đồ Uống' },
+        { id: 'time_date', label: '🗓️ Thời Gian & Ngày Tháng' },
+        { id: 'weather', label: '🌤️ Thời Tiết' },
+        { id: 'travel', label: '🚗 Du Lịch & Giao Thông' },
+        { id: 'jobs', label: '💼 Công Việc & Nghề Nghiệp' },
+        { id: 'education', label: '🎓 Giáo Dục' },
+        { id: 'shopping', label: '🛒 Mua Sắm & Tiền Bạc' },
+        { id: 'tech', label: '💻 Công Nghệ & Internet' },
+        { id: 'business', label: '🏢 Kinh Doanh' },
+        { id: 'adjectives', label: '✨ Tính Từ Đặc Điểm' },
+        { id: 'tenses', label: '⏳ 12 Thì Tiếng Anh' }
+      ];
+
+      let html = '';
+      builtIns.forEach(item => {
+        const isChecked = selectedPresetNames.has(item.id) ? 'checked' : '';
+        const chkHtml = isMultiSelectMode ? `<input type="checkbox" ${isChecked} style="pointer-events:none; accent-color:var(--accent-purple);">` : '';
+        html += `
+          <button type="button" class="preset-btn" data-name="${item.id}" onclick="onPresetClick('${item.id}')" style="display:flex; align-items:center; gap:0.5rem; justify-content:center;">
+            ${chkHtml}
+            <span>${item.label}</span>
+          </button>
+        `;
+      });
+
+      const customDecks = JSON.parse(localStorage.getItem('custom_presets') || '{}');
+      for (const name in customDecks) {
+        const isChecked = selectedPresetNames.has(name) ? 'checked' : '';
+        const chkHtml = isMultiSelectMode ? `<input type="checkbox" ${isChecked} style="pointer-events:none; accent-color:var(--accent-purple);">` : '';
+        html += `
+          <button type="button" class="preset-btn" data-name="${name}" onclick="onPresetClick('${name}')" style="position:relative; display:flex; align-items:center; gap:0.5rem; padding-right: 2.2rem;">
+            ${chkHtml}
+            <span>📚 ${name}</span>
+            <span onclick="deleteCustomPreset('${name}', event)" style="position:absolute; right:0.5rem; top:50%; transform:translateY(-50%); opacity:0.6; padding:0.2rem;" title="Xóa bộ đề này">🗑️</span>
+          </button>
+        `;
+      }
+      grid.innerHTML = html;
+      updatePresetsUI();
+    }
+
+    // Init app
+    function initApp() {
+      renderPresetButtons();
+      combineSelectedPresetsToTable();
+    }
+
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+
+    // Helper map for part of speech abbreviations
+    const POS_MAP = {
+      noun: 'n',
+      verb: 'v',
+      adjective: 'adj',
+      adverb: 'adv',
+      preposition: 'prep',
+      pronoun: 'pron',
+      conjunction: 'conj',
+      interjection: 'interj'
+    };
+
+    // AI Auto Translate & Verify + Part of Speech
+    async function aiAutoTranslate(btn) {
+      if (currentViewMode === 'table') syncTableToTextarea();
+
+      const textarea = document.getElementById('data-input');
+      const text = textarea.value.trim();
+      if (!text) {
+        alert('Vui lòng dán hoặc nhập danh sách từ tiếng Anh vào khung trước!');
+        return;
+      }
+
+      const lines = text.split('\n');
+      let updatedCount = 0;
+      let newLines = [];
+
+      const originalText = btn.innerText;
+      btn.innerText = '⏳ AI Đang Tra Từ...';
+      btn.disabled = true;
+
+      try {
+        for (let line of lines) {
+          line = line.trim();
+          if (!line) continue;
+
+          let key = line;
+          if (line.includes('=')) key = line.split('=')[0].trim();
+          else if (line.includes(':')) key = line.split(':')[0].trim();
+          else if (line.includes('-')) key = line.split('-')[0].trim();
+
+          if (!key || !/^[a-zA-Z\s]+$/.test(key)) {
+            newLines.push(line);
+            continue;
+          }
+
+          const keyLower = key.toLowerCase().trim();
+
+          // 1. Dịch tiếng Việt (Ưu tiên từ điển sạch VI_DICT trước)
+          let translated = '';
+          if (VI_DICT[keyLower]) {
+            translated = VI_DICT[keyLower];
+          } else {
+            try {
+              const transRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(key)}&langpair=en|vi`);
+              const transData = await transRes.json();
+              if (transData && transData.responseData && transData.responseData.translatedText) {
+                translated = transData.responseData.translatedText.toLowerCase().replace(/[.,!]/g, '').trim();
+              }
+            } catch (e) {}
+          }
+
+          // 2. IPA - tra bảng offline trước
+          let ipaStr = '';
+          if (IPA_DICT[keyLower]) {
+            ipaStr = IPA_DICT[keyLower] + ' ';
+          }
+
+          // 3. POS + IPA từ API (nếu chưa có IPA offline)
+          let posStr = '';
+          try {
+            const dictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(keyLower)}`);
+            if (dictRes.ok) {
+              const dictData = await dictRes.json();
+              if (Array.isArray(dictData) && dictData[0]) {
+                const entry = dictData[0];
+                if (entry.meanings && entry.meanings.length > 0) {
+                  const fp = POS_MAP[entry.meanings[0].partOfSpeech] || entry.meanings[0].partOfSpeech;
+                  if (fp) posStr = `(${fp}) `;
+                }
+                if (!ipaStr) {
+                  let ipa = '';
+                  if (entry.phonetics && entry.phonetics.length > 0) {
+                    const withText = entry.phonetics.filter(p => p.text && p.text.trim());
+                    if (withText.length > 0) {
+                      const uk = withText.find(p => p.audio && p.audio.includes('-uk'));
+                      const us = withText.find(p => p.audio && p.audio.includes('-us'));
+                      ipa = (uk || us || withText[0]).text.trim();
+                    }
+                  }
+                  if (!ipa && entry.phonetic) ipa = entry.phonetic.trim();
+                  if (ipa) {
+                    if (!ipa.startsWith('/')) ipa = '/' + ipa;
+                    if (!ipa.endsWith('/')) ipa = ipa + '/';
+                    ipaStr = ipa + ' ';
+                  }
+                }
+              }
+            }
+          } catch (e) {}
+
+          // 4. Dự phòng IPA từ Datamuse API nếu vẫn chưa có
+          if (!ipaStr) {
+            try {
+              const dmRes = await fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(keyLower)}&md=r&ipa=1`);
+              if (dmRes.ok) {
+                const dmData = await dmRes.json();
+                if (Array.isArray(dmData) && dmData[0] && dmData[0].tags) {
+                  const ipaTag = dmData[0].tags.find(t => t.startsWith('ipa_pron:'));
+                  if (ipaTag) {
+                    let cleanIpa = ipaTag.replace('ipa_pron:', '').trim();
+                    ipaStr = `/${cleanIpa}/ `;
+                  }
+                }
+              }
+            } catch (e) {}
+          }
+
+          if (translated) {
+            newLines.push(`${key} = ${posStr}${ipaStr}${translated}`);
+            updatedCount++;
+          } else {
+            newLines.push(line);
+          }
+        }
+
+        textarea.value = newLines.join('\n');
+        syncTextareaToTable();
+        onTextareaInput();
+        alert(`🤖 AI đã điền từ loại, phiên âm & dịch cho ${updatedCount} từ!`);
+      } catch (err) {
+        alert('Có lỗi xảy ra: ' + err.message);
+      } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    // ===== PRONUNCIATION: TTS + MIC CHECK =====
+
+    // Đọc to từ tiếng Anh hiện tại bằng Web Speech API
+    function speakQuestion() {
+      const current = quizData[currentIndex];
+      if (!current) return;
+
+      // Lấy từ tiếng Anh từ question (bỏ IPA và POS nếu có)
+      const word = current.question.replace(/\(.*?\)/g, '').replace(/\/.*?\//g, '').trim();
+      if (!word || !window.speechSynthesis) return;
+
+      // Dừng nếu đang đọc
+      window.speechSynthesis.cancel();
+
+      const utt = new SpeechSynthesisUtterance(word);
+      utt.lang = 'en-GB';   // Giọng Anh Anh
+      utt.rate = 0.85;       // Tốc độ hơi chậm để dễ nghe
+      utt.pitch = 1;
+
+      // Thử tìm giọng tiếng Anh tốt nhất
+      const voices = window.speechSynthesis.getVoices();
+      const enVoice = voices.find(v => v.lang.startsWith('en-GB')) ||
+                      voices.find(v => v.lang.startsWith('en-US')) ||
+                      voices.find(v => v.lang.startsWith('en'));
+      if (enVoice) utt.voice = enVoice;
+
+      const btn = document.getElementById('btn-speak');
+      btn.classList.add('speaking');
+      btn.textContent = '🔊 Đang đọc...';
+
+      utt.onend = () => {
+        btn.classList.remove('speaking');
+        btn.textContent = '🔊 Nghe phát âm';
+      };
+      utt.onerror = () => {
+        btn.classList.remove('speaking');
+        btn.textContent = '🔊 Nghe phát âm';
+      };
+
+      window.speechSynthesis.speak(utt);
+    }
+
+    // Đọc to câu ví dụ ngữ cảnh hiện tại bằng Web Speech TTS
+    let currentRawExampleEn = '';
+    function speakExampleSentence() {
+      if (!currentRawExampleEn || !window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+
+      const cleanText = currentRawExampleEn.replace(/<[^>]*>/g, '').trim();
+      const utt = new SpeechSynthesisUtterance(cleanText);
+      utt.lang = 'en-GB';
+      utt.rate = 0.85;
+
+      const voices = window.speechSynthesis.getVoices();
+      const enVoice = voices.find(v => v.lang.startsWith('en-GB')) ||
+                      voices.find(v => v.lang.startsWith('en-US')) ||
+                      voices.find(v => v.lang.startsWith('en'));
+      if (enVoice) utt.voice = enVoice;
+
+      const btn = document.getElementById('btn-speak-example');
+      if (btn) btn.textContent = '🔊 Đang đọc...';
+
+      utt.onend = () => { if (btn) btn.textContent = '🔊 Nghe cả câu'; };
+      utt.onerror = () => { if (btn) btn.textContent = '🔊 Nghe cả câu'; };
+
+      window.speechSynthesis.speak(utt);
+    }
+
+    // Ghi âm giọng người dùng & so sánh với từ cần học
+    let micRecognition = null;
+    function startMicCheck() {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRec) {
+        document.getElementById('mic-result').textContent = '⚠️ Trình duyệt không hỗ trợ nhận diện giọng nói. Hãy dùng Chrome.';
+        return;
+      }
+
+      const current = quizData[currentIndex];
+      if (!current) return;
+      const targetWord = current.question.replace(/\(.*?\)/g, '').replace(/\/.*?\//g, '').trim().toLowerCase();
+
+      const btn = document.getElementById('btn-mic');
+      const resultEl = document.getElementById('mic-result');
+
+      if (micRecognition) {
+        micRecognition.stop();
+        micRecognition = null;
+        btn.classList.remove('recording');
+        btn.textContent = '🎤 Đọc theo';
+        return;
+      }
+
+      micRecognition = new SpeechRec();
+      micRecognition.lang = 'en-US';
+      micRecognition.interimResults = false;
+      micRecognition.maxAlternatives = 5;
+
+      btn.classList.add('recording');
+      btn.textContent = '⏹ Đang nghe... (bấm để dừng)';
+      resultEl.textContent = '🎙️ Hãy đọc từ to và rõ...';
+
+      micRecognition.onresult = (e) => {
+        const alts = Array.from(e.results[0]).map(r => r.transcript.trim().toLowerCase());
+        const matched = alts.some(a => a === targetWord || a.includes(targetWord) || targetWord.includes(a));
+
+        if (matched) {
+          resultEl.innerHTML = `<span style="color:var(--success); font-weight:600;">✅ Chuẩn rồi! "${alts[0]}" — Bạn phát âm đúng!</span>`;
+          playSfx('correct');
+        } else {
+          resultEl.innerHTML = `<span style="color:var(--warning);">🔄 Nghe được: "<b>${alts[0]}</b>" — Thử lại nhé!</span>`;
+        }
+      };
+
+      micRecognition.onerror = (e) => {
+        resultEl.textContent = e.error === 'no-speech' ? '🤫 Không nghe thấy gì. Bấm lại và đọc to hơn nhé!' : `⚠️ Lỗi: ${e.error}`;
+      };
+
+      micRecognition.onend = () => {
+        btn.classList.remove('recording');
+        btn.textContent = '🎤 Đọc theo';
+        micRecognition = null;
+      };
+
+      micRecognition.start();
+    }
+
+    // Reset mic khi chuyển câu
+    function resetPronunciationUI() {
+      if (micRecognition) { micRecognition.stop(); micRecognition = null; }
+      window.speechSynthesis && window.speechSynthesis.cancel();
+      const btn = document.getElementById('btn-speak');
+      const micBtn = document.getElementById('btn-mic');
+      const exBtn = document.getElementById('btn-speak-example');
+      const res = document.getElementById('mic-result');
+      if (btn) { btn.classList.remove('speaking'); btn.textContent = '🔊 Nghe phát âm'; }
+      if (micBtn) { micBtn.classList.remove('recording'); micBtn.textContent = '🎤 Đọc theo'; }
+      if (exBtn) { exBtn.textContent = '🔊 Nghe cả câu'; }
+      if (res) res.textContent = '';
+    }
+
+    // Audio SFX using Web Audio API
+    function playSfx(type) {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (type === 'correct') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.25);
+        } else if (type === 'wrong') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, ctx.currentTime); // A3
+          osc.frequency.setValueAtTime(174.61, ctx.currentTime + 0.1); // F3
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.3);
+        }
+      } catch (e) {}
+    }
+
+    // Parse input text
+    function parseInput(text) {
+      const lines = text.split('\n');
+      const parsed = [];
+
+      lines.forEach(line => {
+        line = line.trim();
+        if (!line) return;
+
+        let parts = [];
+        if (line.includes('=')) parts = line.split('=');
+        else if (line.includes(':')) parts = line.split(':');
+        else if (line.includes('-')) parts = line.split('-');
+
+        if (parts.length >= 2) {
+          const q = parts[0].trim();
+          const a = parts.slice(1).join('=').trim();
+          if (q && a) parsed.push({ question: q, answer: a });
+        }
+      });
+
+      return parsed;
+    }
+
+    // Shuffle array
+    function shuffle(arr) {
+      return [...arr].sort(() => Math.random() - 0.5);
+    }
+
+    // Start Quiz
+    function startQuiz() {
+      // Luôn đồng bộ bảng -> textarea trước khi bắt đầu
+      if (currentViewMode === 'table') syncTableToTextarea();
+
+      const rawText = document.getElementById('data-input').value;
+      const parsed = parseInput(rawText);
+
+      if (parsed.length === 0) {
+        alert('Vui lòng chọn bộ đề mẫu hoặc nhập dữ liệu hợp lệ (Ví dụ: Từ = Nghĩa)');
+        return;
+      }
+
+      mode = document.querySelector('input[name="quiz-mode"]:checked').value;
+      quizData = shuffle(parsed);
+      currentIndex = 0;
+      score = 0;
+      wrongAnswers = [];
+
+      showSection('quiz-section');
+      renderQuestion();
+    }
+
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    // ===== CONTEXT EXAMPLE SENTENCES DICTIONARY (MULTIPLE RANDOM SENTENCES) =====
+    const EXAMPLES_DICT = {
+      // Family
+      'aunt': [
+        { en: 'My <b>aunt</b> baked a delicious cake for my birthday.', vi: 'Cô/Dì của tôi đã nướng một chiếc bánh rất ngon mừng sinh nhật tôi.' },
+        { en: 'I am visiting my <b>aunt</b> in Da Nang next week.', vi: 'Tôi sẽ đi thăm dì của tôi ở Đà Nẵng vào tuần tới.' },
+        { en: 'My <b>aunt</b> is a very kind and talented painter.', vi: 'Dì của tôi là một họa sĩ rất tốt bụng và tài năng.' }
+      ],
+      'baby': [
+        { en: 'The <b>baby</b> is sleeping peacefully in the cradle.', vi: 'Em bé đang ngủ bình yên trong nôi.' },
+        { en: 'The <b>baby</b> laughed when she saw her favorite toy.', vi: 'Em bé cười tươi khi thấy món đồ chơi yêu thích.' }
+      ],
+      'brother': [
+        { en: 'I have an elder <b>brother</b> who works as an engineer.', vi: 'Tôi có một người anh trai làm kỹ sư.' },
+        { en: 'My <b>brother</b> and I enjoy playing football together.', vi: 'Anh trai tôi và tôi thích đá bóng cùng nhau.' }
+      ],
+      'child': [
+        { en: 'The <b>child</b> is playing happily in the garden.', vi: 'Đứa trẻ đang chơi vui vẻ trong vườn.' },
+        { en: 'Every <b>child</b> deserves love and care.', vi: 'Mỗi đứa trẻ đều xứng đáng nhận được tình yêu thương và sự chăm sóc.' }
+      ],
+      'cousin': [
+        { en: 'I often play video games with my <b>cousin</b> on weekends.', vi: 'Tôi thường chơi điện tử với anh/chị em họ vào cuối tuần.' },
+        { en: 'My <b>cousin</b> is coming to stay with us for the summer.', vi: 'Anh họ tôi sắp đến ở lại với chúng tôi vào mùa hè này.' }
+      ],
+      'daughter': [
+        { en: 'Her <b>daughter</b> plays the piano very well.', vi: 'Con gái cô ấy chơi đàn piano rất giỏi.' },
+        { en: 'They are very proud of their talented <b>daughter</b>.', vi: 'Họ rất tự hào về cô con gái tài năng của mình.' }
+      ],
+      'elderly': [
+        { en: 'We should always respect and help the <b>elderly</b>.', vi: 'Chúng ta luôn nên kính trọng và giúp đỡ người cao tuổi.' },
+        { en: 'The community built a quiet park for the <b>elderly</b>.', vi: 'Cộng đồng đã xây một công viên yên tĩnh cho người cao tuổi.' }
+      ],
+      'family': [
+        { en: 'Family is the most important thing in life.', vi: 'Gia đình là điều quan trọng nhất trong cuộc sống.' },
+        { en: 'Our <b>family</b> gathers together for dinner every Sunday.', vi: 'Gia đình chúng tôi sum họp ăn tối mỗi Chủ nhật.' }
+      ],
+      'father': [
+        { en: 'My <b>father</b> works hard at the office every day.', vi: 'Bố tôi làm việc chăm chỉ ở văn phòng mỗi ngày.' },
+        { en: 'My <b>father</b> taught me how to ride a bicycle.', vi: 'Bố tôi đã dạy tôi cách đi xe đạp.' }
+      ],
+      'grandfather': [
+        { en: 'My <b>grandfather</b> loves reading newspapers in the morning.', vi: 'Ông tôi thích đọc báo vào buổi sáng.' },
+        { en: 'My <b>grandfather</b> told me stories about his youth.', vi: 'Ông tôi đã kể cho tôi nghe những câu chuyện thời trẻ của ông.' }
+      ],
+      'grandmother': [
+        { en: 'My <b>grandmother</b> tells wonderful stories every evening.', vi: 'Bà tôi kể những câu chuyện tuyệt vời mỗi tối.' },
+        { en: 'My <b>grandmother</b> grows beautiful roses in her garden.', vi: 'Bà tôi trồng những bông hoa hồng rất đẹp trong vườn.' }
+      ],
+      'husband': [
+        { en: 'Her <b>husband</b> bought her a lovely bouquet of flowers.', vi: 'Chồng cô ấy đã mua cho cô ấy một bó hoa xinh xắn.' },
+        { en: 'Her <b>husband</b> works as a senior architect.', vi: 'Chồng cô ấy làm kiến trúc sư trưởng.' }
+      ],
+      'infant': [
+        { en: 'The <b>infant</b> smiled brightly at her mother.', vi: 'Trẻ sơ sinh mỉm cười rạng rỡ với mẹ.' },
+        { en: 'The doctor checked the <b>infant</b>\'s health carefully.', vi: 'Bác sĩ đã kiểm tra sức khỏe của trẻ sơ sinh cẩn thận.' }
+      ],
+      'mother': [
+        { en: 'My <b>mother</b> cooks delicious meals for our family.', vi: 'Mẹ tôi nấu những món ăn rất ngon cho gia đình.' },
+        { en: 'I called my <b>mother</b> to share the good news.', vi: 'Tôi đã gọi cho mẹ để chia sẻ tin vui.' }
+      ],
+      'nephew': [
+        { en: 'My <b>nephew</b> is starting primary school this year.', vi: 'Cháu trai tôi bắt đầu vào tiểu học năm nay.' },
+        { en: 'I bought a toy car for my cute <b>nephew</b>.', vi: 'Tôi đã mua một chiếc xe ô tô đồ chơi cho đứa cháu trai dễ thương.' }
+      ],
+      'niece': [
+        { en: 'She gave her <b>niece</b> a lovely toy doll.', vi: 'Cô ấy tặng cháu gái mình một con búp bê đáng yêu.' },
+        { en: 'My <b>niece</b> won a drawing competition yesterday.', vi: 'Cháu gái tôi đã thắng một cuộc thi vẽ tranh ngày hôm qua.' }
+      ],
+      'parent': [
+        { en: 'Every <b>parent</b> wants the best for their children.', vi: 'Mỗi bậc cha mẹ đều muốn những điều tốt nhất cho con cái.' },
+        { en: 'She spoke to her <b>parent</b> about her study plan.', vi: 'Cô ấy đã trò chuyện với cha mẹ về kế hoạch học tập.' }
+      ],
+      'parents': [
+        { en: 'My <b>parents</b> always support my career choices.', vi: 'Bố mẹ tôi luôn ủng hộ sự lựa chọn nghề nghiệp của tôi.' },
+        { en: 'They went on a trip with their <b>parents</b>.', vi: 'Họ đã đi du lịch cùng với bố mẹ mình.' }
+      ],
+      'sibling': [
+        { en: 'I have two <b>siblings</b>, a brother and a sister.', vi: 'Tôi có hai anh chị em ruột.' },
+        { en: 'She gets along very well with her <b>siblings</b>.', vi: 'Cô ấy hòa thuận rất tốt với các anh chị em của mình.' }
+      ],
+      'sister': [
+        { en: 'My <b>sister</b> enjoys reading books in her room.', vi: 'Chị/Em gái tôi thích đọc sách trong phòng.' },
+        { en: 'My <b>sister</b> is studying abroad in Japan.', vi: 'Em gái tôi đang du học tại Nhật Bản.' }
+      ],
+      'son': [
+        { en: 'Their <b>son</b> passed the university entrance exam.', vi: 'Con trai họ đã đỗ kỳ thi đầu vào đại học.' },
+        { en: 'He takes his <b>son</b> to the park on Sundays.', vi: 'Anh ấy đưa con trai đến công viên vào các ngày Chủ nhật.' }
+      ],
+      'teenager': [
+        { en: 'Many <b>teenagers</b> enjoy listening to music online.', vi: 'Nhiều thiếu niên thích nghe nhạc trực tuyến.' },
+        { en: 'The camp was designed for creative <b>teenagers</b>.', vi: 'Hội trại được thiết kế dành cho các bạn thiếu niên sáng tạo.' }
+      ],
+      'twin': [
+        { en: 'They are <b>twin</b> brothers born on the same day.', vi: 'Họ là hai anh em sinh đôi sinh cùng ngày.' },
+        { en: 'The <b>twin</b> sisters look almost identical.', vi: 'Hai chị em sinh đôi trông gần như giống hệt nhau.' }
+      ],
+      'uncle': [
+        { en: 'My <b>uncle</b> lives in Hanoi and works as a doctor.', vi: 'Chú/Bác của tôi sống ở Hà Nội và làm bác sĩ.' },
+        { en: 'I spent the summer holiday visiting my <b>uncle</b>\'s farm.', vi: 'Tôi dành kỳ nghỉ hè đến thăm trang trại của chú tôi.' },
+        { en: 'My <b>uncle</b> gave me a wonderful camera for my birthday.', vi: 'Bác tôi đã tặng tôi một chiếc máy ảnh tuyệt vời mừng sinh nhật.' }
+      ],
+      'widow': [
+        { en: 'The kind <b>widow</b> spent her time helping neighbors.', vi: 'Người góa phụ tốt bụng dành thời gian giúp đỡ hàng xóm.' }
+      ],
+      'wife': [
+        { en: 'His <b>wife</b> works as a talented interior designer.', vi: 'Vợ anh ấy là một nhà thiết kế nội thất tài năng.' },
+        { en: 'He cooked dinner to surprise his <b>wife</b>.', vi: 'Anh ấy đã nấu bữa tối để tạo bất ngờ cho vợ mình.' }
+      ],
+
+      // Colors
+      'brown': [
+        { en: 'I have a friendly <b>brown</b> dog.', vi: 'Tôi có một con chó màu nâu thân thiện.' },
+        { en: 'She bought a stylish <b>brown</b> leather bag.', vi: 'Cô ấy đã mua một chiếc túi da màu nâu rất sành điệu.' },
+        { en: 'The autumn leaves turned a rich <b>brown</b> color.', vi: 'Những chiếc lá mùa thu chuyển sang màu nâu đậm đẹp mắt.' }
+      ],
+      'black': [
+        { en: 'He wears an elegant <b>black</b> suit for the party.', vi: 'Anh ấy mặc bộ suit màu đen sang trọng đến bữa tiệc.' },
+        { en: 'She drives a shiny <b>black</b> car.', vi: 'Cô ấy lái một chiếc xe hơi màu đen sáng bóng.' }
+      ],
+      'blue': [
+        { en: 'The clear sky is bright <b>blue</b> today.', vi: 'Bầu trời quang đãng hôm nay màu xanh dương rực rỡ.' },
+        { en: 'She loves swimming in the deep <b>blue</b> ocean.', vi: 'Cô ấy thích bơi lội đại dương xanh thẳm.' }
+      ],
+      'red': [
+        { en: 'Ripe apples are sweet and bright <b>red</b>.', vi: 'Táo chín ngọt và có màu đỏ tươi.' },
+        { en: 'She wore a striking <b>red</b> dress to the show.', vi: 'Cô ấy mặc một chiếc váy màu đỏ nổi bật đến buổi diễn.' }
+      ],
+      'green': [
+        { en: 'The grass is fresh and <b>green</b> after the rain.', vi: 'Cỏ tươi xanh sau cơn mưa.' },
+        { en: 'Eating <b>green</b> vegetables is good for your health.', vi: 'Ăn rau xanh rất tốt cho sức khỏe của bạn.' }
+      ],
+      'yellow': [
+        { en: 'Bright <b>yellow</b> sunflowers bloom in summer.', vi: 'Những bông hoa hướng dương màu vàng rực rỡ nở vào mùa hè.' },
+        { en: 'The yellow sun shines brightly over the beach.', vi: 'Mặt trời màu vàng tỏa nắng rực rỡ trên bãi biển.' }
+      ]
+    };
+
+    function getExampleSentence(word, meaningText, posStr) {
+      if (!word) return null;
+      const cleanWord = word.replace(/\(.*?\)/g, '').replace(/\/.*?\//g, '').trim();
+      const lower = cleanWord.toLowerCase();
+
+      let targetItem = null;
+      if (EXAMPLES_DICT[lower]) {
+        const val = EXAMPLES_DICT[lower];
+        if (Array.isArray(val)) {
+          // Randomly pick 1 sentence from the list every time!
+          targetItem = val[Math.floor(Math.random() * val.length)];
+        } else {
+          targetItem = val;
+        }
+        return targetItem;
+      }
+
+      // Diverse & Dynamic Fallback Generator (Randomly select 1 of 4 natural sentence patterns)
+      const cleanMeaning = (meaningText || '').replace(/\(.*?\)/g, '').replace(/\/.*?\//g, '').trim();
+      const displayMeaning = cleanMeaning || 'khái niệm này';
+
+      if (posStr === 'v') {
+        const vPatterns = [
+          { en: `They usually <b>${cleanWord}</b> together every weekend.`, vi: `Họ thường ${displayMeaning} cùng nhau mỗi cuối tuần.` },
+          { en: `It is important to <b>${cleanWord}</b> when studying a language.`, vi: `Điều quan trọng là phải ${displayMeaning} khi học một ngôn ngữ.` },
+          { en: `She learns how to <b>${cleanWord}</b> effectively in daily life.`, vi: `Cô ấy học cách ${displayMeaning} hiệu quả trong đời sống.` },
+          { en: `Many people enjoy to <b>${cleanWord}</b> during free time.`, vi: `Nhiều người thích ${displayMeaning} trong thời gian rảnh.` }
+        ];
+        return vPatterns[Math.floor(Math.random() * vPatterns.length)];
+      } else if (posStr === 'adj') {
+        const adjPatterns = [
+          { en: `This product is very <b>${cleanWord}</b> and reliable.`, vi: `Sản phẩm này rất ${displayMeaning} và đáng tin cậy.` },
+          { en: `The atmosphere here feels <b>${cleanWord}</b> and comfortable.`, vi: `Bầu không khí ở đây cảm thấy rất ${displayMeaning} và thoải mái.` },
+          { en: `She looks quite <b>${cleanWord}</b> in her new outfit.`, vi: `Cô ấy trông khá ${displayMeaning} trong trang phục mới.` },
+          { en: `Everything in this town looks <b>${cleanWord}</b> today.`, vi: `Mọi thứ ở thị trấn này trông rất ${displayMeaning} hôm nay.` }
+        ];
+        return adjPatterns[Math.floor(Math.random() * adjPatterns.length)];
+      } else {
+        const nPatterns = [
+          { en: `She spoke about the <b>${cleanWord}</b> during her meeting.`, vi: `Cô ấy đã nói về ${displayMeaning} trong cuộc họp.` },
+          { en: `We learned a lot about <b>${cleanWord}</b> in our recent lesson.`, vi: `Chúng tôi đã học được nhiều điều về ${displayMeaning} trong bài học gần đây.` },
+          { en: `Understanding <b>${cleanWord}</b> is useful for your daily communication.`, vi: `Hiểu về ${displayMeaning} rất hữu ích cho giao tiếp hàng ngày.` },
+          { en: `He shared an interesting story about <b>${cleanWord}</b> yesterday.`, vi: `Anh ấy đã chia sẻ một câu chuyện thú vị về ${displayMeaning} ngày hôm qua.` }
+        ];
+        return nPatterns[Math.floor(Math.random() * nPatterns.length)];
+      }
+    }
+
+    function renderQuestion() {
+      isChecked = false;
+      resetPronunciationUI(); // Reset nút phát âm & mic khi chuyển câu mới
+      const current = quizData[currentIndex];
+      
+      document.getElementById('counter').innerText = `Câu ${currentIndex + 1} / ${quizData.length}`;
+      document.getElementById('score-live').innerText = `Đúng: ${score}`;
+      
+      const pct = ((currentIndex) / quizData.length) * 100;
+      document.getElementById('progress-bar').style.width = pct + '%';
+
+      let posStr = '';
+      let posHtml = '';
+      let ipaHtml = '';
+      const posMatch = current.answer.match(/\((n|v|adj|adv|prep|pron|conj|interj)[^)]*\)/i);
+      if (posMatch) {
+        posStr = posMatch[1].toLowerCase();
+        posHtml = `<span class="pos-badge" style="font-size:0.85rem; padding:0.2rem 0.6rem;">${posStr}</span>`;
+      }
+      const ipaMatch = current.answer.match(/\/([^\/]+)\//);
+      if (ipaMatch) {
+        ipaHtml = `<span class="phonetic-text" style="font-size:1.1rem; margin-left:0.4rem;">/${ipaMatch[1]}/</span>`;
+      }
+
+      document.getElementById('question-text').innerHTML = `
+        <div>${current.question}</div>
+        ${(posHtml || ipaHtml) ? `<div style="margin-top:0.4rem;">${posHtml} ${ipaHtml}</div>` : ''}
+      `;
+
+      // Prepare Context Example Box (hidden until answer submitted)
+      const exampleCard = document.getElementById('example-card');
+      const exampleEnEl = document.getElementById('example-en');
+      const exampleViEl = document.getElementById('example-vi');
+      const speakExBtn = document.getElementById('btn-speak-example');
+
+      const ex = getExampleSentence(current.question, current.answer, posStr);
+      if (ex && ex.en) {
+        currentRawExampleEn = ex.en;
+        exampleEnEl.innerHTML = `💬 <i>"${ex.en}"</i>`;
+        exampleViEl.innerText = `(${ex.vi})`;
+        if (speakExBtn) speakExBtn.textContent = '🔊 Nghe cả câu';
+      } else {
+        currentRawExampleEn = '';
+      }
+      if (exampleCard) exampleCard.style.display = 'none';
+
+      document.getElementById('feedback').className = 'feedback-card';
+      document.getElementById('feedback').style.display = 'none';
+      document.getElementById('next-btn').style.display = 'none';
+      document.getElementById('override-btn').style.display = 'none';
+
+      if (mode === 'type') {
+        document.getElementById('type-container').style.display = 'flex';
+        document.getElementById('choice-container').style.display = 'none';
+        const input = document.getElementById('user-answer');
+        input.value = '';
+        input.disabled = false;
+        input.focus();
+      } else {
+        document.getElementById('type-container').style.display = 'none';
+        document.getElementById('choice-container').style.display = 'grid';
+        renderChoices(current);
+      }
+    }
+
+    function renderChoices(current) {
+      const container = document.getElementById('choice-container');
+      container.innerHTML = '';
+
+      // Get 3 wrong choices
+      const otherAnswers = quizData
+        .filter(item => item.answer !== current.answer)
+        .map(item => item.answer);
+
+      const shuffledOthers = shuffle(otherAnswers).slice(0, 3);
+      const options = shuffle([current.answer, ...shuffledOthers]);
+
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = opt;
+        btn.onclick = () => selectChoice(opt, current.answer);
+        container.appendChild(btn);
+      });
+    }
+
+    // Normalize string for smart checking
+    function normalizeStr(str) {
+      return (str || "").toLowerCase()
+        .replace(/\((n|v|adj|adv|prep|pron|conj|interj)[^)]*\)/gi, "")
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    async function checkAnswer() {
+      if (isChecked) return;
+
+      const inputEl = document.getElementById('user-answer');
+      const submitBtn = document.querySelector('.btn-submit');
+      const userAns = inputEl.value;
+      const currentObj = quizData[currentIndex];
+      const targetAns = currentObj.answer;
+      const questionTerm = normalizeStr(currentObj.question);
+
+      if (!normalizeStr(userAns)) {
+        showFeedback(false, targetAns, userAns, false);
+        return;
+      }
+
+      isChecked = true;
+      inputEl.disabled = true;
+      const origBtnText = submitBtn ? submitBtn.innerText : 'Gửi';
+      if (submitBtn) submitBtn.innerText = '🤖 AI đang duyệt...';
+
+      const userNorm = normalizeStr(userAns);
+      const targetNorm = normalizeStr(targetAns);
+
+      // 1. Tách các từ đồng nghĩa trong đáp án (phân cách bởi /, ,, ;, hoặc)
+      const rawSynonyms = targetAns.split(/[\/,;]|\bhoặc\b|\bor\b/);
+      const validSynonyms = rawSynonyms.map(s => normalizeStr(s)).filter(s => s.length > 0);
+
+      let isMatch = (targetNorm === userNorm);
+      let aiVerified = false;
+
+      if (!isMatch) {
+        isMatch = validSynonyms.some(syn => {
+          if (syn === userNorm) return true;
+          if (userNorm.length >= 2 && (syn.includes(userNorm) || userNorm.includes(syn))) {
+            return true;
+          }
+          return false;
+        });
+      }
+
+      // 2. Nếu chưa khớp trực tiếp, gọi AI tra nhanh từ đồng nghĩa tiếng Việt -> tiếng Anh
+      if (!isMatch && userNorm.length >= 2) {
+        try {
+          const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(userAns)}&langpair=vi|en`);
+          const data = await res.json();
+          if (data && data.responseData && data.responseData.translatedText) {
+            const translatedEn = normalizeStr(data.responseData.translatedText);
+            if (translatedEn === questionTerm || translatedEn.includes(questionTerm) || questionTerm.includes(translatedEn)) {
+              isMatch = true;
+              aiVerified = true;
+            }
+          }
+        } catch (err) {}
+      }
+
+      if (submitBtn) submitBtn.innerText = origBtnText;
+      showFeedback(isMatch, targetAns, userAns, aiVerified);
+    }
+
+    function selectChoice(selected, correct) {
+      if (isChecked) return;
+      isChecked = true;
+
+      const buttons = document.querySelectorAll('.option-btn');
+      buttons.forEach(b => {
+        b.disabled = true;
+        if (b.innerText === correct) b.style.borderColor = 'var(--success)';
+        if (b.innerText === selected && selected !== correct) b.style.borderColor = 'var(--danger)';
+      });
+
+      const isMatch = (selected === correct);
+      showFeedback(isMatch, correct, selected);
+    }
+
+    function showFeedback(isCorrect, targetAnswer, userAnswer, aiVerified = false) {
+      const fb = document.getElementById('feedback');
+      const fbText = document.getElementById('feedback-text');
+      const overrideBtn = document.getElementById('override-btn');
+
+      if (isCorrect) {
+        score++;
+        playSfx('correct');
+        fb.className = 'feedback-card correct';
+        if (aiVerified) {
+          fbText.innerHTML = `<strong>🤖 AI Xác Nhận: Đúng Tuyệt Đối!</strong> <em>(Từ đồng nghĩa chuẩn)</em><br>Gợi ý đáp án gốc: ${targetAnswer}`;
+        } else {
+          fbText.innerHTML = `<strong>✨ Chính xác!</strong><br>Đáp án: ${targetAnswer}`;
+        }
+      } else {
+        playSfx('wrong');
+        wrongAnswers.push(quizData[currentIndex]);
+        fb.className = 'feedback-card wrong';
+        fbText.innerHTML = `<strong>❌ Chưa chính xác!</strong><br>Đáp án chuẩn: <strong>${targetAnswer}</strong>`;
+        if (mode === 'type' && userAnswer && userAnswer.trim().length > 0) {
+          overrideBtn.style.display = 'inline-block';
+        }
+      }
+
+      fb.style.display = 'block';
+      document.getElementById('next-btn').style.display = 'block';
+      document.getElementById('score-live').innerText = `Đúng: ${score}`;
+
+      // Show example card after answer submission
+      const exampleCard = document.getElementById('example-card');
+      if (exampleCard && currentRawExampleEn) {
+        exampleCard.style.display = 'block';
+      }
+    }
+
+    function overrideCorrect() {
+      score++;
+      document.getElementById('score-live').innerText = `Đúng: ${score}`;
+      const fb = document.getElementById('feedback');
+      fb.className = 'feedback-card correct';
+      document.getElementById('feedback-text').innerHTML = `<strong>✨ Đã cập nhật thành ĐÚNG!</strong>`;
+      document.getElementById('override-btn').style.display = 'none';
+      // remove from wrongAnswers
+      wrongAnswers.pop();
+      playSfx('correct');
+    }
+
+    function nextQuestion() {
+      currentIndex++;
+      if (currentIndex < quizData.length) {
+        renderQuestion();
+      } else {
+        showResults();
+      }
+    }
+
+    function showResults() {
+      showSection('result-section');
+      const pct = Math.round((score / quizData.length) * 100);
+      document.getElementById('final-score').innerText = `${pct}%`;
+
+      const msg = document.getElementById('result-message');
+      if (pct === 100) msg.innerText = '🏆 Tuyệt vời! Bạn trả lời đúng tất cả!';
+      else if (pct >= 80) msg.innerText = '👏 Rất tốt! Bạn nắm rất vững kiến thức.';
+      else if (pct >= 50) msg.innerText = '💪 Khá tốt! Hãy ôn lại các câu sai nhé.';
+      else msg.innerText = '📖 Cố gắng lên! Cùng làm lại để thuộc bài nhé.';
+
+      const reviewBox = document.getElementById('review-box');
+      const reviewList = document.getElementById('review-list');
+
+      if (wrongAnswers.length > 0) {
+        reviewBox.style.display = 'block';
+        reviewList.innerHTML = wrongAnswers.map(item => `
+          <div class="review-item">
+            <span style="font-weight:600; color:var(--text-main);">${item.question}</span>
+            <span style="color:var(--accent-pink);">${item.answer}</span>
+          </div>
+        `).join('');
+      } else {
+        reviewBox.style.display = 'none';
+      }
+    }
+
+    function restartQuiz() {
+      quizData = shuffle(quizData);
+      currentIndex = 0;
+      score = 0;
+      wrongAnswers = [];
+      showSection('quiz-section');
+      renderQuestion();
+    }
+
+    function backToSetup() {
+      showSection('setup-section');
+    }
+
+    // Keyboard support: Enter key submits or moves next
+    document.addEventListener('keydown', (e) => {
+      if (document.getElementById('quiz-section').classList.contains('active')) {
+        if (e.key === 'Enter') {
+          if (!isChecked && mode === 'type') {
+            checkAnswer();
+          } else if (isChecked) {
+            nextQuestion();
+          }
+        }
+      }
+    });
+
+    // Default load family preset on launch is handled by DOMContentLoaded above
+  </script>
+</body>
+</html>
