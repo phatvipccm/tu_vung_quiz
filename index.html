@@ -2201,72 +2201,118 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
       }
     }
 
-    // ===== PRONUNCIATION: TTS + MIC CHECK =====
+    // ===== PRONUNCIATION: DUAL ENGINE TTS (Web Speech API + Fallback Audio) =====
 
-    // Đọc to từ tiếng Anh hiện tại bằng Web Speech API
+    function playFallbackAudio(text, onEnd) {
+      try {
+        const clean = encodeURIComponent(text);
+        const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${clean}&tl=en&client=tw-ob`;
+        const audio = new Audio(audioUrl);
+        audio.onended = () => { if (onEnd) onEnd(); };
+        audio.onerror = () => { if (onEnd) onEnd(); };
+        audio.play().catch(e => { if (onEnd) onEnd(); });
+      } catch (err) {
+        if (onEnd) onEnd();
+      }
+    }
+
+    // Đọc to từ tiếng Anh hiện tại bằng Web Speech API + Audio Fallback
     function speakQuestion() {
       const current = quizData[currentIndex];
       if (!current) return;
 
-      // Lấy từ tiếng Anh từ question (bỏ IPA và POS nếu có)
       const word = current.question.replace(/\(.*?\)/g, '').replace(/\/.*?\//g, '').trim();
-      if (!word || !window.speechSynthesis) return;
-
-      // Dừng nếu đang đọc
-      window.speechSynthesis.cancel();
-
-      const utt = new SpeechSynthesisUtterance(word);
-      utt.lang = 'en-GB';   // Giọng Anh Anh
-      utt.rate = 0.85;       // Tốc độ hơi chậm để dễ nghe
-      utt.pitch = 1;
-
-      // Thử tìm giọng tiếng Anh tốt nhất
-      const voices = window.speechSynthesis.getVoices();
-      const enVoice = voices.find(v => v.lang.startsWith('en-GB')) ||
-                      voices.find(v => v.lang.startsWith('en-US')) ||
-                      voices.find(v => v.lang.startsWith('en'));
-      if (enVoice) utt.voice = enVoice;
+      if (!word) return;
 
       const btn = document.getElementById('btn-speak');
-      btn.classList.add('speaking');
-      btn.textContent = '🔊 Đang đọc...';
+      if (btn) {
+        btn.classList.add('speaking');
+        btn.textContent = '🔊 Đang đọc...';
+      }
 
-      utt.onend = () => {
-        btn.classList.remove('speaking');
-        btn.textContent = '🔊 Nghe phát âm';
-      };
-      utt.onerror = () => {
-        btn.classList.remove('speaking');
-        btn.textContent = '🔊 Nghe phát âm';
+      const resetBtn = () => {
+        if (btn) {
+          btn.classList.remove('speaking');
+          btn.textContent = '🔊 Nghe phát âm';
+        }
       };
 
-      window.speechSynthesis.speak(utt);
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        setTimeout(() => {
+          try {
+            window.speechSynthesis.resume();
+            const utt = new SpeechSynthesisUtterance(word);
+            utt.lang = 'en-US';
+            utt.rate = 0.85;
+
+            const voices = window.speechSynthesis.getVoices();
+            const enVoice = voices.find(v => v.lang === 'en-US' || v.lang === 'en-GB') ||
+                            voices.find(v => v.lang && v.lang.startsWith('en'));
+            if (enVoice) utt.voice = enVoice;
+
+            let isDone = false;
+            utt.onend = () => { if (!isDone) { isDone = true; resetBtn(); } };
+            utt.onerror = () => {
+              if (!isDone) {
+                isDone = true;
+                playFallbackAudio(word, resetBtn);
+              }
+            };
+
+            window.speechSynthesis.speak(utt);
+          } catch (e) {
+            playFallbackAudio(word, resetBtn);
+          }
+        }, 60);
+      } else {
+        playFallbackAudio(word, resetBtn);
+      }
     }
 
-    // Đọc to câu ví dụ ngữ cảnh hiện tại bằng Web Speech TTS
+    // Đọc to câu ví dụ ngữ cảnh hiện tại bằng Web Speech TTS + Audio Fallback
     let currentRawExampleEn = '';
     function speakExampleSentence() {
-      if (!currentRawExampleEn || !window.speechSynthesis) return;
-      window.speechSynthesis.cancel();
-
+      if (!currentRawExampleEn) return;
       const cleanText = currentRawExampleEn.replace(/<[^>]*>/g, '').trim();
-      const utt = new SpeechSynthesisUtterance(cleanText);
-      utt.lang = 'en-GB';
-      utt.rate = 0.85;
-
-      const voices = window.speechSynthesis.getVoices();
-      const enVoice = voices.find(v => v.lang.startsWith('en-GB')) ||
-                      voices.find(v => v.lang.startsWith('en-US')) ||
-                      voices.find(v => v.lang.startsWith('en'));
-      if (enVoice) utt.voice = enVoice;
+      if (!cleanText) return;
 
       const btn = document.getElementById('btn-speak-example');
       if (btn) btn.textContent = '🔊 Đang đọc...';
 
-      utt.onend = () => { if (btn) btn.textContent = '🔊 Nghe cả câu'; };
-      utt.onerror = () => { if (btn) btn.textContent = '🔊 Nghe cả câu'; };
+      const resetBtn = () => { if (btn) btn.textContent = '🔊 Nghe cả câu'; };
 
-      window.speechSynthesis.speak(utt);
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        setTimeout(() => {
+          try {
+            window.speechSynthesis.resume();
+            const utt = new SpeechSynthesisUtterance(cleanText);
+            utt.lang = 'en-US';
+            utt.rate = 0.85;
+
+            const voices = window.speechSynthesis.getVoices();
+            const enVoice = voices.find(v => v.lang === 'en-US' || v.lang === 'en-GB') ||
+                            voices.find(v => v.lang && v.lang.startsWith('en'));
+            if (enVoice) utt.voice = enVoice;
+
+            let isDone = false;
+            utt.onend = () => { if (!isDone) { isDone = true; resetBtn(); } };
+            utt.onerror = () => {
+              if (!isDone) {
+                isDone = true;
+                playFallbackAudio(cleanText, resetBtn);
+              }
+            };
+
+            window.speechSynthesis.speak(utt);
+          } catch (e) {
+            playFallbackAudio(cleanText, resetBtn);
+          }
+        }, 60);
+      } else {
+        playFallbackAudio(cleanText, resetBtn);
+      }
     }
 
     // Ghi âm giọng người dùng & so sánh với từ cần học
