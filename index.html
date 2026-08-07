@@ -2331,8 +2331,11 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
       }
     }
 
-    // ====== HÀM PHÁT ÂM CÂU DÀI (VÍ DỤ) ======
-    function mobileSpeakSentence(text, onDone) {
+    // ====== HÀM PHÁT ÂM CÂU DÀI (VÍ DỤ) — PHÁT ĐỒNG BỘ NGAY KHI CLICK ======
+    // QUAN TRỌNG: Trên Android Chrome, audio.play() PHẢI được gọi đồng bộ trong click handler.
+    // Bất kỳ setTimeout nào trước play() đều phá vỡ "user gesture" và bị chặn âm thanh.
+
+    function speakSentenceViaAudio(text, onDone) {
       const clean = text.replace(/<[^>]*>/g, '').replace(/\(.*?\)/g, '').replace(/\/.*?\//g, '').trim();
       if (!clean) { if (onDone) onDone(); return; }
 
@@ -2341,51 +2344,56 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
         if (!isDone) { isDone = true; if (onDone) onDone(); }
       };
 
-      // Safety timeout 8s cho câu dài
-      setTimeout(finish, 8000);
+      // Safety timeout
+      setTimeout(finish, 10000);
 
-      // Thử Web Speech API — câu dài cần thời gian khởi động lâu hơn
+      // PHÁT NGAY LẬP TỨC — không qua setTimeout, không qua fetch
+      // Youdao hỗ trợ phát âm cả câu dài (không chỉ từ đơn)
+      const audio = new Audio();
+      audio.src = 'https://dict.youdao.com/dictvoice?type=2&audio=' + encodeURIComponent(clean);
+      audio.onended = finish;
+      audio.onerror = () => {
+        // Youdao lỗi → thử speechSynthesis (gọi trực tiếp, không setTimeout)
+        trySpeechForSentence(clean, finish);
+      };
+
+      const p = audio.play();
+      if (p && p.catch) {
+        p.catch(() => {
+          // play() bị chặn → thử speechSynthesis
+          trySpeechForSentence(clean, finish);
+        });
+      }
+    }
+
+    // Fallback: speechSynthesis cho câu (gọi trực tiếp, không delay)
+    function trySpeechForSentence(text, finish) {
       if (window.speechSynthesis) {
         try {
           window.speechSynthesis.cancel();
+          const utt = new SpeechSynthesisUtterance(text);
+          utt.lang = 'en-US';
+          utt.rate = 0.88;
+          utt.volume = 1.0;
+          const voice = getBestEnglishVoice();
+          if (voice) utt.voice = voice;
+          utt.onend = finish;
+          utt.onerror = finish;
+          window.speechSynthesis.speak(utt);
 
-          // Delay 150ms sau cancel() — quan trọng cho Android
+          // Phát hiện thất bại âm thầm
           setTimeout(() => {
-            if (isDone) return;
-            try {
-              const utt = new SpeechSynthesisUtterance(clean);
-              utt.lang = 'en-US';
-              utt.rate = 0.88;
-              utt.volume = 1.0;
-
-              const voice = getBestEnglishVoice();
-              if (voice) utt.voice = voice;
-
-              utt.onend = finish;
-              utt.onerror = () => { tryGoogleTTS(clean, finish); };
-
-              window.speechSynthesis.speak(utt);
-
-              // Câu dài: kiểm tra thất bại sau 800ms (lâu hơn từ đơn)
-              setTimeout(() => {
-                if (!isDone && window.speechSynthesis && !window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
-                  // Speech thất bại → thử Google TTS (bỏ qua Youdao vì Youdao chỉ hỗ trợ từ đơn)
-                  tryGoogleTTS(clean, finish);
-                }
-              }, 800);
-            } catch (e) {
-              tryGoogleTTS(clean, finish);
+            if (window.speechSynthesis && !window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+              finish();
             }
-          }, 150);
+          }, 1000);
           return;
         } catch (e) {}
       }
-
-      // Không có speechSynthesis → Google TTS
-      tryGoogleTTS(clean, finish);
+      finish();
     }
 
-    // Google TTS — fallback cuối cùng, hỗ trợ cả từ đơn và câu dài
+    // Google TTS — fallback cuối cùng cho từ đơn
     function tryGoogleTTS(text, finish) {
       try {
         const audio = new Audio();
@@ -2424,7 +2432,8 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
       const btn = document.getElementById('btn-speak-example');
       if (btn) btn.textContent = '🔊 Đang đọc...';
 
-      mobileSpeakSentence(cleanText, () => {
+      // GỌI HÀM PHÁT ÂM CÂU TRỰC TIẾP — không qua mobileSpeakText hay setTimeout
+      speakSentenceViaAudio(cleanText, () => {
         if (btn) btn.textContent = '🔊 Nghe cả câu';
       });
     }
