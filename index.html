@@ -2201,135 +2201,176 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
       }
     }
 
-    // ===== PRONUNCIATION: TRIPLE ENGINE TTS (Native Human MP3 + Web Speech + Audio Fallback) =====
+    // ===== PRONUNCIATION ENGINE v4: MOBILE-FIRST TTS =====
+    // Thiết kế lại hoàn toàn cho Android Chrome & iOS Safari
 
-    // ===== PRONUNCIATION: TRIPLE ENGINE TTS (Native Audio MP3 Stream + Web Speech + Web Audio Unlocked) =====
-
-    let audioUnlocked = false;
-    let globalAudio = new Audio();
     let globalAudioCtx = null;
+    let cachedVoices = [];
 
-    // Mở khóa âm thanh di động cho iOS Safari & Android Chrome ngay khi chạm vào màn hình
-    function unlockMobileAudio() {
-      if (audioUnlocked) return;
-      audioUnlocked = true;
-
-      // 1. Mở khóa Web Speech API
+    // Tải danh sách giọng đọc bất đồng bộ (Android Chrome cần event voiceschanged)
+    function loadVoices() {
       if (window.speechSynthesis) {
-        try {
-          window.speechSynthesis.resume();
-          const silent = new SpeechSynthesisUtterance(' ');
-          silent.volume = 0.001;
-          window.speechSynthesis.speak(silent);
-        } catch (e) {}
+        cachedVoices = window.speechSynthesis.getVoices();
       }
+    }
+    loadVoices();
+    if (window.speechSynthesis && window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
 
-      // 2. Mở khóa HTML5 Audio Element
+    // Mở khóa Audio Context (cho SFX đúng/sai)
+    function ensureAudioCtx() {
       try {
-        globalAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
-        globalAudio.play().then(() => { globalAudio.pause(); }).catch(() => {});
-      } catch (e) {}
-
-      // 3. Mở khóa Web Audio Context cho SFX
-      try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) {
-          globalAudioCtx = new AudioCtx();
-          if (globalAudioCtx.state === 'suspended') {
-            globalAudioCtx.resume();
-          }
+        if (!globalAudioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) globalAudioCtx = new AC();
+        }
+        if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
+          globalAudioCtx.resume();
         }
       } catch (e) {}
     }
 
-    document.addEventListener('click', unlockMobileAudio, { capture: true, once: true });
-    document.addEventListener('touchstart', unlockMobileAudio, { capture: true, once: true });
+    // Mở khóa tất cả audio engines khi người dùng chạm/click (chạy MỖI LẦN click, không phải once)
+    function unlockAllAudio() {
+      // Mở khóa Web Speech
+      if (window.speechSynthesis) {
+        try {
+          window.speechSynthesis.resume();
+          loadVoices();
+        } catch (e) {}
+      }
+      // Mở khóa AudioContext
+      ensureAudioCtx();
+    }
+    document.addEventListener('click', unlockAllAudio, { capture: true });
+    document.addEventListener('touchstart', unlockAllAudio, { capture: true });
 
-    // Phát âm thanh trực tiếp (Chạy đồng bộ ngay khi bấm nút để vượt qua Autoplay Block trên iOS/Android)
-    function playAudioStream(text, isSentence, onStart, onEnd) {
-      if (onStart) onStart();
+    // Tìm giọng đọc tiếng Anh tốt nhất
+    function getBestEnglishVoice() {
+      if (cachedVoices.length === 0 && window.speechSynthesis) {
+        cachedVoices = window.speechSynthesis.getVoices();
+      }
+      if (cachedVoices.length === 0) return null;
+      return cachedVoices.find(v => v.lang === 'en-US') ||
+             cachedVoices.find(v => v.lang === 'en-GB') ||
+             cachedVoices.find(v => v.lang && v.lang.startsWith('en')) ||
+             null;
+    }
 
-      let finished = false;
-      const done = () => {
-        if (!finished) {
-          finished = true;
-          if (onEnd) onEnd();
-        }
+    // ====== HÀM PHÁT ÂM CHÍNH ======
+    function mobileSpeakText(text, onDone) {
+      const clean = text.replace(/<[^>]*>/g, '').replace(/\(.*?\)/g, '').replace(/\/.*?\//g, '').trim();
+      if (!clean) { if (onDone) onDone(); return; }
+
+      let isDone = false;
+      const finish = () => {
+        if (!isDone) { isDone = true; if (onDone) onDone(); }
       };
 
-      // Giới hạn thời gian tối đa để nút KHÔNG BAO GIỜ bị kẹt ở "Đang đọc..."
-      const maxTime = isSentence ? 5000 : 2500;
-      setTimeout(done, maxTime);
+      // An toàn tuyệt đối: nút LUÔN được reset sau 4 giây dù có chuyện gì xảy ra
+      setTimeout(finish, 4000);
 
-      const cleanText = text.replace(/<[^>]*>/g, '').replace(/\(.*?\)/g, '').replace(/\/.*?\//g, '').trim();
-      if (!cleanText) {
-        done();
-        return;
-      }
-
-      // Phương án 1: Ưu tiên Web Speech API tích hợp sẵn của Android Chrome & iOS Safari (Hoạt động 100% không lo chặn mạng/HTTPS)
+      // === THỬ PHƯƠNG ÁN 1: Web Speech API (giọng đọc có sẵn trên điện thoại) ===
       if (window.speechSynthesis) {
         try {
           window.speechSynthesis.cancel();
-          window.speechSynthesis.resume();
 
-          const utt = new SpeechSynthesisUtterance(cleanText);
+          const utt = new SpeechSynthesisUtterance(clean);
           utt.lang = 'en-US';
-          utt.rate = 0.88;
+          utt.rate = 0.9;
+          utt.volume = 1.0;
 
-          utt.onend = done;
-          utt.onerror = () => { tryAudioElement(cleanText, done); };
+          const voice = getBestEnglishVoice();
+          if (voice) utt.voice = voice;
+
+          utt.onend = finish;
+          utt.onerror = () => {
+            // Speech thất bại -> chuyển sang Audio MP3
+            tryMp3Fallback(clean, finish);
+          };
 
           window.speechSynthesis.speak(utt);
+
+          // QUAN TRỌNG: Phát hiện thất bại âm thầm trên Android
+          // Sau 300ms kiểm tra xem speechSynthesis có thực sự đang đọc không
+          setTimeout(() => {
+            if (!isDone && window.speechSynthesis && !window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+              // Speech đã thất bại âm thầm -> chuyển sang MP3
+              tryMp3Fallback(clean, finish);
+            }
+          }, 350);
+
           return;
-        } catch (e) {}
+        } catch (e) {
+          // speechSynthesis lỗi exception -> chuyển sang MP3
+        }
       }
 
-      // Phương án 2: Dự phòng bằng Audio Element MP3 nếu thiết bị không hỗ trợ SpeechSynthesis
-      tryAudioElement(cleanText, done);
+      // === Nếu không có speechSynthesis -> dùng MP3 ===
+      tryMp3Fallback(clean, finish);
     }
 
-    function tryAudioElement(text, done) {
+    // Phương án dự phòng: Audio MP3 từ Youdao -> Google TTS
+    function tryMp3Fallback(text, finish) {
       try {
         const audio = new Audio();
-        audio.src = `https://dict.youdao.com/dictvoice?type=2&audio=${encodeURIComponent(text)}`;
-        audio.onended = done;
+        audio.crossOrigin = 'anonymous';
+        audio.src = 'https://dict.youdao.com/dictvoice?type=2&audio=' + encodeURIComponent(text);
+
+        let mp3Done = false;
+        const mp3Finish = () => { if (!mp3Done) { mp3Done = true; finish(); } };
+
+        audio.onended = mp3Finish;
         audio.onerror = () => {
-          // Phương án 3: Google TTS Stream
-          const gAudio = new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=en&client=tw-ob`);
-          gAudio.onended = done;
-          gAudio.onerror = done;
-          gAudio.play().catch(done);
+          // Youdao thất bại -> thử Google TTS
+          tryGoogleTTS(text, finish);
         };
-        audio.play().catch(done);
-      } catch (err) {
-        done();
+
+        // Timeout cho MP3: nếu sau 3s không phát được -> chuyển tiếp
+        setTimeout(() => {
+          if (!mp3Done) {
+            audio.pause();
+            tryGoogleTTS(text, finish);
+          }
+        }, 3000);
+
+        const p = audio.play();
+        if (p && p.catch) p.catch(() => tryGoogleTTS(text, finish));
+      } catch (e) {
+        tryGoogleTTS(text, finish);
       }
     }
 
-    // Đọc to từ tiếng Anh hiện tại
+    function tryGoogleTTS(text, finish) {
+      try {
+        const audio = new Audio();
+        audio.src = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=' + encodeURIComponent(text);
+        audio.onended = finish;
+        audio.onerror = finish;
+        const p = audio.play();
+        if (p && p.catch) p.catch(finish);
+      } catch (e) {
+        finish();
+      }
+    }
+
+    // ====== CÁC HÀM GỌI TỪ NÚT GIAO DIỆN ======
+
     function speakQuestion() {
       const current = quizData[currentIndex];
       if (!current) return;
-
       const word = current.question.replace(/\(.*?\)/g, '').replace(/\/.*?\//g, '').trim();
       if (!word) return;
 
       const btn = document.getElementById('btn-speak');
-      
-      playAudioStream(
-        word, 
-        false, 
-        () => {
-          if (btn) { btn.classList.add('speaking'); btn.textContent = '🔊 Đang đọc...'; }
-        }, 
-        () => {
-          if (btn) { btn.classList.remove('speaking'); btn.textContent = '🔊 Nghe phát âm'; }
-        }
-      );
+      if (btn) { btn.classList.add('speaking'); btn.textContent = '🔊 Đang đọc...'; }
+
+      mobileSpeakText(word, () => {
+        if (btn) { btn.classList.remove('speaking'); btn.textContent = '🔊 Nghe phát âm'; }
+      });
     }
 
-    // Đọc to câu ví dụ ngữ cảnh hiện tại
     let currentRawExampleEn = '';
     function speakExampleSentence() {
       if (!currentRawExampleEn) return;
@@ -2337,13 +2378,11 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
       if (!cleanText) return;
 
       const btn = document.getElementById('btn-speak-example');
+      if (btn) btn.textContent = '🔊 Đang đọc...';
 
-      playAudioStream(
-        cleanText, 
-        true, 
-        () => { if (btn) btn.textContent = '🔊 Đang đọc...'; }, 
-        () => { if (btn) btn.textContent = '🔊 Nghe cả câu'; }
-      );
+      mobileSpeakText(cleanText, () => {
+        if (btn) btn.textContent = '🔊 Nghe cả câu';
+      });
     }
 
     // Ghi âm giọng người dùng & so sánh với từ cần học
@@ -2407,8 +2446,7 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
     // Reset mic khi chuyển câu
     function resetPronunciationUI() {
       if (micRecognition) { micRecognition.stop(); micRecognition = null; }
-      window.speechSynthesis && window.speechSynthesis.cancel();
-      try { globalAudio.pause(); globalAudio.currentTime = 0; } catch (e) {}
+      if (window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch(e) {} }
 
       const btn = document.getElementById('btn-speak');
       const micBtn = document.getElementById('btn-mic');
@@ -2420,16 +2458,10 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
       if (res) res.textContent = '';
     }
 
-    // Audio SFX using Web Audio API (Tương thích di động)
+    // Audio SFX (đúng/sai)
     function playSfx(type) {
       try {
-        if (!globalAudioCtx) {
-          const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          if (AudioCtx) globalAudioCtx = new AudioCtx();
-        }
-        if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
-          globalAudioCtx.resume();
-        }
+        ensureAudioCtx();
         if (!globalAudioCtx) return;
 
         const osc = globalAudioCtx.createOscillator();
@@ -2439,15 +2471,15 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
 
         if (type === 'correct') {
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(523.25, globalAudioCtx.currentTime); // C5
-          osc.frequency.setValueAtTime(659.25, globalAudioCtx.currentTime + 0.1); // E5
+          osc.frequency.setValueAtTime(523.25, globalAudioCtx.currentTime);
+          osc.frequency.setValueAtTime(659.25, globalAudioCtx.currentTime + 0.1);
           gain.gain.setValueAtTime(0.2, globalAudioCtx.currentTime);
           osc.start();
           osc.stop(globalAudioCtx.currentTime + 0.25);
         } else if (type === 'wrong') {
           osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(220, globalAudioCtx.currentTime); // A3
-          osc.frequency.setValueAtTime(174.61, globalAudioCtx.currentTime + 0.1); // F3
+          osc.frequency.setValueAtTime(220, globalAudioCtx.currentTime);
+          osc.frequency.setValueAtTime(174.61, globalAudioCtx.currentTime + 0.1);
           gain.gain.setValueAtTime(0.2, globalAudioCtx.currentTime);
           osc.start();
           osc.stop(globalAudioCtx.currentTime + 0.3);
