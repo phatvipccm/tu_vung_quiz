@@ -2201,11 +2201,28 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
       }
     }
 
-    // ===== PRONUNCIATION ENGINE v4: MOBILE-FIRST TTS =====
-    // Thiết kế lại hoàn toàn cho Android Chrome & iOS Safari
+    // ===== PRONUNCIATION ENGINE v5: TOKEN-CANCELABLE MOBILE TTS =====
+    // Ngăn chặn 100% việc âm thanh từ câu trước phát sót lại khi chuyển sang câu mới
 
     let globalAudioCtx = null;
     let cachedVoices = [];
+    let currentAudioToken = 0;
+    let currentAudioInstance = null;
+
+    // Hàm dừng triệt để tất cả âm thanh & timer đang chạy
+    function stopAllAudioPlayback() {
+      currentAudioToken++;
+      if (window.speechSynthesis) {
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+      }
+      if (currentAudioInstance) {
+        try {
+          currentAudioInstance.pause();
+          currentAudioInstance.src = '';
+        } catch (e) {}
+        currentAudioInstance = null;
+      }
+    }
 
     // Tải danh sách giọng đọc bất đồng bộ (Android Chrome cần event voiceschanged)
     function loadVoices() {
@@ -2236,14 +2253,12 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
     function unlockAllAudio() {
       if (audioUnlocked) return;
       audioUnlocked = true;
-      // Mở khóa Web Speech (chỉ 1 lần duy nhất, không gọi lại mỗi click)
       if (window.speechSynthesis) {
         try {
           window.speechSynthesis.resume();
           loadVoices();
         } catch (e) {}
       }
-      // Mở khóa AudioContext
       ensureAudioCtx();
     }
     document.addEventListener('click', unlockAllAudio, { capture: true });
@@ -2261,27 +2276,31 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
              null;
     }
 
-    // ====== HÀM PHÁT ÂM (TỪ ĐƠN + CÂU) ======
+    // ====== HÀM PHÁT ÂM AN TOÀN (TỪ ĐƠN + CÂU) ======
     function mobileSpeakWord(text, onDone) {
+      stopAllAudioPlayback();
+      const myToken = currentAudioToken;
+
       const clean = text.replace(/<[^>]*>/g, '').replace(/\(.*?\)/g, '').replace(/\/.*?\//g, '').trim();
       if (!clean) { if (onDone) onDone(); return; }
 
       let isDone = false;
       const finish = () => {
-        if (!isDone) { isDone = true; if (onDone) onDone(); }
+        if (myToken !== currentAudioToken) return; // Nếu đã chuyển câu mới -> hủy không phát
+        if (!isDone) {
+          isDone = true;
+          if (onDone) onDone();
+        }
       };
 
-      // Safety timeout 10s (đủ cho cả câu dài)
-      setTimeout(finish, 10000);
+      // Safety timeout 10s
+      setTimeout(() => {
+        if (myToken === currentAudioToken) finish();
+      }, 10000);
 
-      // Thử Web Speech API — gọi TRỰC TIẾP không qua cancel() trước
+      // Thử Web Speech API trước
       if (window.speechSynthesis) {
         try {
-          // Chỉ cancel nếu đang có utterance cũ
-          if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
-            window.speechSynthesis.cancel();
-          }
-
           const utt = new SpeechSynthesisUtterance(clean);
           utt.lang = 'en-US';
           utt.rate = 0.9;
@@ -2290,63 +2309,84 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
           const voice = getBestEnglishVoice();
           if (voice) utt.voice = voice;
 
-          // Bỏ qua onend nếu nó fire quá sớm (< 300ms = bug Android)
           const speakTime = Date.now();
           utt.onend = () => {
-            if (Date.now() - speakTime > 300) {
+            if (myToken !== currentAudioToken) return;
+            if (Date.now() - speakTime > 200) {
               finish();
             }
-            // Nếu onend fire quá sớm, để safety timeout xử lý
           };
-          utt.onerror = () => { tryYoudaoThenGoogle(clean, finish); };
+          utt.onerror = () => {
+            if (myToken !== currentAudioToken) return;
+            tryYoudaoThenGoogle(clean, finish, myToken);
+          };
 
           window.speechSynthesis.speak(utt);
 
-          // Phát hiện thất bại âm thầm sau 1.5s (tăng lên cho câu dài)
+          // Phát hiện thất bại âm thầm sau 1.5s
           setTimeout(() => {
+            if (myToken !== currentAudioToken) return;
             if (!isDone && window.speechSynthesis && !window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
-              tryYoudaoThenGoogle(clean, finish);
+              tryYoudaoThenGoogle(clean, finish, myToken);
             }
           }, 1500);
           return;
         } catch (e) {}
       }
 
-      tryYoudaoThenGoogle(clean, finish);
+      tryYoudaoThenGoogle(clean, finish, myToken);
     }
 
     // Fallback cho từ đơn: Youdao → Google TTS
-    function tryYoudaoThenGoogle(text, finish) {
+    function tryYoudaoThenGoogle(text, finish, token) {
+      if (token !== currentAudioToken) return;
       try {
-        const audio = new Audio();
-        audio.src = 'https://dict.youdao.com/dictvoice?type=2&audio=' + encodeURIComponent(text);
+        currentAudioInstance = new Audio();
+        currentAudioInstance.src = 'https://dict.youdao.com/dictvoice?type=2&audio=' + encodeURIComponent(text);
 
         let fallbackDone = false;
-        const fbFinish = () => { if (!fallbackDone) { fallbackDone = true; finish(); } };
+        const fbFinish = () => {
+          if (token !== currentAudioToken) return;
+          if (!fallbackDone) { fallbackDone = true; finish(); }
+        };
 
-        audio.onended = fbFinish;
-        audio.onerror = () => { tryGoogleTTS(text, finish); };
+        currentAudioInstance.onended = fbFinish;
+        currentAudioInstance.onerror = () => {
+          if (token !== currentAudioToken) return;
+          tryGoogleTTS(text, finish, token);
+        };
 
-        setTimeout(() => { if (!fallbackDone) { audio.pause(); tryGoogleTTS(text, finish); } }, 3000);
+        setTimeout(() => {
+          if (token !== currentAudioToken) return;
+          if (!fallbackDone) {
+            if (currentAudioInstance) try { currentAudioInstance.pause(); } catch(e){}
+            tryGoogleTTS(text, finish, token);
+          }
+        }, 3500);
 
-        const p = audio.play();
-        if (p && p.catch) p.catch(() => tryGoogleTTS(text, finish));
+        const p = currentAudioInstance.play();
+        if (p && p.catch) p.catch(() => {
+          if (token !== currentAudioToken) return;
+          tryGoogleTTS(text, finish, token);
+        });
       } catch (e) {
-        tryGoogleTTS(text, finish);
+        if (token !== currentAudioToken) return;
+        tryGoogleTTS(text, finish, token);
       }
     }
 
     // Google TTS — fallback cuối cùng cho từ đơn
-    function tryGoogleTTS(text, finish) {
+    function tryGoogleTTS(text, finish, token) {
+      if (token !== currentAudioToken) return;
       try {
-        const audio = new Audio();
-        audio.src = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=' + encodeURIComponent(text);
-        audio.onended = finish;
-        audio.onerror = finish;
-        const p = audio.play();
-        if (p && p.catch) p.catch(finish);
+        currentAudioInstance = new Audio();
+        currentAudioInstance.src = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=' + encodeURIComponent(text);
+        currentAudioInstance.onended = () => { if (token === currentAudioToken) finish(); };
+        currentAudioInstance.onerror = () => { if (token === currentAudioToken) finish(); };
+        const p = Array.isArray(currentAudioInstance) ? null : currentAudioInstance.play();
+        if (p && p.catch) p.catch(() => { if (token === currentAudioToken) finish(); });
       } catch (e) {
-        finish();
+        if (token === currentAudioToken) finish();
       }
     }
 
@@ -2375,7 +2415,6 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
       const btn = document.getElementById('btn-speak-example');
       if (btn) btn.textContent = '🔊 Đang đọc...';
 
-      // Dùng CÙNG hàm mobileSpeakWord đã hoạt động tốt trên điện thoại
       mobileSpeakWord(cleanText, () => {
         if (btn) btn.textContent = '🔊 Nghe cả câu';
       });
@@ -2442,7 +2481,7 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
     // Reset mic khi chuyển câu
     function resetPronunciationUI() {
       if (micRecognition) { micRecognition.stop(); micRecognition = null; }
-      if (window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch(e) {} }
+      stopAllAudioPlayback();
 
       const btn = document.getElementById('btn-speak');
       const micBtn = document.getElementById('btn-mic');
