@@ -2249,87 +2249,61 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
     function playAudioStream(text, isSentence, onStart, onEnd) {
       if (onStart) onStart();
 
-      const cleanText = text.replace(/<[^>]*>/g, '').replace(/\(.*?\)/g, '').replace(/\/.*?\//g, '').trim();
-      if (!cleanText) {
-        if (onEnd) onEnd();
-        return;
-      }
-
-      // Phương án 1: Nếu là 1 từ -> Dùng luồng MP3 trực tiếp (Youdao English Audio Engine)
-      if (!isSentence && cleanText.split(/\s+/).length <= 2) {
-        try {
-          globalAudio.pause();
-          globalAudio.currentTime = 0;
-          globalAudio.src = `https://dict.youdao.com/dictvoice?type=2&audio=${encodeURIComponent(cleanText)}`;
-          
-          let played = false;
-          globalAudio.onended = () => { if (!played) { played = true; if (onEnd) onEnd(); } };
-          globalAudio.onerror = () => { if (!played) { played = true; fallbackSpeechSynthesis(cleanText, onEnd); } };
-
-          const playPromise = globalAudio.play();
-          if (playPromise !== undefined) {
-            playPromise.then(() => {}).catch(() => {
-              fallbackSpeechSynthesis(cleanText, onEnd);
-            });
-          }
-          return;
-        } catch (err) {
-          fallbackSpeechSynthesis(cleanText, onEnd);
-          return;
-        }
-      }
-
-      // Phương án 2: Nếu là câu dài -> Dùng Web Speech API hoặc Google TTS Stream
-      fallbackSpeechSynthesis(cleanText, onEnd);
-    }
-
-    // Dự phòng Web Speech API / Google TTS Stream
-    function fallbackSpeechSynthesis(text, onEnd) {
-      let completed = false;
-      const finish = () => {
-        if (!completed) {
-          completed = true;
+      let finished = false;
+      const done = () => {
+        if (!finished) {
+          finished = true;
           if (onEnd) onEnd();
         }
       };
 
+      // Giới hạn thời gian tối đa để nút KHÔNG BAO GIỜ bị kẹt ở "Đang đọc..."
+      const maxTime = isSentence ? 5000 : 2500;
+      setTimeout(done, maxTime);
+
+      const cleanText = text.replace(/<[^>]*>/g, '').replace(/\(.*?\)/g, '').replace(/\/.*?\//g, '').trim();
+      if (!cleanText) {
+        done();
+        return;
+      }
+
+      // Phương án 1: Ưu tiên Web Speech API tích hợp sẵn của Android Chrome & iOS Safari (Hoạt động 100% không lo chặn mạng/HTTPS)
       if (window.speechSynthesis) {
         try {
           window.speechSynthesis.cancel();
           window.speechSynthesis.resume();
 
-          const utt = new SpeechSynthesisUtterance(text);
+          const utt = new SpeechSynthesisUtterance(cleanText);
           utt.lang = 'en-US';
           utt.rate = 0.88;
 
-          const voices = window.speechSynthesis.getVoices();
-          const enVoice = voices.find(v => v.lang === 'en-US' || v.lang === 'en-GB') ||
-                          voices.find(v => v.lang && v.lang.startsWith('en'));
-          if (enVoice) utt.voice = enVoice;
-
-          utt.onend = finish;
-          utt.onerror = () => { playGoogleStream(text, finish); };
+          utt.onend = done;
+          utt.onerror = () => { tryAudioElement(cleanText, done); };
 
           window.speechSynthesis.speak(utt);
-          // Timeout phòng trường hợp Web Speech bị treo trên một số thiết bị Android
-          setTimeout(() => { if (!completed) playGoogleStream(text, finish); }, 3500);
           return;
         } catch (e) {}
       }
 
-      playGoogleStream(text, finish);
+      // Phương án 2: Dự phòng bằng Audio Element MP3 nếu thiết bị không hỗ trợ SpeechSynthesis
+      tryAudioElement(cleanText, done);
     }
 
-    function playGoogleStream(text, onEnd) {
+    function tryAudioElement(text, done) {
       try {
-        globalAudio.pause();
-        globalAudio.currentTime = 0;
-        globalAudio.src = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=en&client=tw-ob`;
-        globalAudio.onended = () => { if (onEnd) onEnd(); };
-        globalAudio.onerror = () => { if (onEnd) onEnd(); };
-        globalAudio.play().catch(() => { if (onEnd) onEnd(); });
+        const audio = new Audio();
+        audio.src = `https://dict.youdao.com/dictvoice?type=2&audio=${encodeURIComponent(text)}`;
+        audio.onended = done;
+        audio.onerror = () => {
+          // Phương án 3: Google TTS Stream
+          const gAudio = new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=en&client=tw-ob`);
+          gAudio.onended = done;
+          gAudio.onerror = done;
+          gAudio.play().catch(done);
+        };
+        audio.play().catch(done);
       } catch (err) {
-        if (onEnd) onEnd();
+        done();
       }
     }
 
