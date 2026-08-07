@@ -2231,9 +2231,12 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
       } catch (e) {}
     }
 
-    // Mở khóa tất cả audio engines khi người dùng chạm/click (chạy MỖI LẦN click, không phải once)
+    // Mở khóa audio engines lần đầu tiên
+    let audioUnlocked = false;
     function unlockAllAudio() {
-      // Mở khóa Web Speech
+      if (audioUnlocked) return;
+      audioUnlocked = true;
+      // Mở khóa Web Speech (chỉ 1 lần duy nhất, không gọi lại mỗi click)
       if (window.speechSynthesis) {
         try {
           window.speechSynthesis.resume();
@@ -2258,7 +2261,7 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
              null;
     }
 
-    // ====== HÀM PHÁT ÂM TỪ ĐƠN ======
+    // ====== HÀM PHÁT ÂM (TỪ ĐƠN + CÂU) ======
     function mobileSpeakWord(text, onDone) {
       const clean = text.replace(/<[^>]*>/g, '').replace(/\(.*?\)/g, '').replace(/\/.*?\//g, '').trim();
       if (!clean) { if (onDone) onDone(); return; }
@@ -2268,41 +2271,43 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
         if (!isDone) { isDone = true; if (onDone) onDone(); }
       };
 
-      // Safety timeout 8s (đủ cho cả câu dài)
-      setTimeout(finish, 8000);
+      // Safety timeout 10s (đủ cho cả câu dài)
+      setTimeout(finish, 10000);
 
-      // Thử Web Speech API trước
+      // Thử Web Speech API — gọi TRỰC TIẾP không qua cancel() trước
       if (window.speechSynthesis) {
         try {
-          window.speechSynthesis.cancel();
+          // Chỉ cancel nếu đang có utterance cũ
+          if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+            window.speechSynthesis.cancel();
+          }
 
-          // Delay 100ms sau cancel() — fix bug Android Chrome
+          const utt = new SpeechSynthesisUtterance(clean);
+          utt.lang = 'en-US';
+          utt.rate = 0.9;
+          utt.volume = 1.0;
+
+          const voice = getBestEnglishVoice();
+          if (voice) utt.voice = voice;
+
+          // Bỏ qua onend nếu nó fire quá sớm (< 300ms = bug Android)
+          const speakTime = Date.now();
+          utt.onend = () => {
+            if (Date.now() - speakTime > 300) {
+              finish();
+            }
+            // Nếu onend fire quá sớm, để safety timeout xử lý
+          };
+          utt.onerror = () => { tryYoudaoThenGoogle(clean, finish); };
+
+          window.speechSynthesis.speak(utt);
+
+          // Phát hiện thất bại âm thầm sau 1.5s (tăng lên cho câu dài)
           setTimeout(() => {
-            if (isDone) return;
-            try {
-              const utt = new SpeechSynthesisUtterance(clean);
-              utt.lang = 'en-US';
-              utt.rate = 0.9;
-              utt.volume = 1.0;
-
-              const voice = getBestEnglishVoice();
-              if (voice) utt.voice = voice;
-
-              utt.onend = finish;
-              utt.onerror = () => { tryYoudaoThenGoogle(clean, finish); };
-
-              window.speechSynthesis.speak(utt);
-
-              // Phát hiện thất bại âm thầm sau 500ms
-              setTimeout(() => {
-                if (!isDone && window.speechSynthesis && !window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
-                  tryYoudaoThenGoogle(clean, finish);
-                }
-              }, 500);
-            } catch (e) {
+            if (!isDone && window.speechSynthesis && !window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
               tryYoudaoThenGoogle(clean, finish);
             }
-          }, 100);
+          }, 1500);
           return;
         } catch (e) {}
       }
