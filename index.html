@@ -2203,59 +2203,138 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
 
     // ===== PRONUNCIATION: TRIPLE ENGINE TTS (Native Human MP3 + Web Speech + Audio Fallback) =====
 
-    // Mở khóa âm thanh di động cho iOS Safari & Android Chrome ngay khi người dùng chạm vào màn hình lần đầu
+    // ===== PRONUNCIATION: TRIPLE ENGINE TTS (Native Audio MP3 Stream + Web Speech + Web Audio Unlocked) =====
+
     let audioUnlocked = false;
+    let globalAudio = new Audio();
+    let globalAudioCtx = null;
+
+    // Mở khóa âm thanh di động cho iOS Safari & Android Chrome ngay khi chạm vào màn hình
     function unlockMobileAudio() {
       if (audioUnlocked) return;
       audioUnlocked = true;
-      if (window.speechSynthesis) {
-        window.speechSynthesis.resume();
-        const silent = new SpeechSynthesisUtterance(' ');
-        silent.volume = 0.01;
-        window.speechSynthesis.speak(silent);
-      }
-    }
-    document.addEventListener('click', unlockMobileAudio, { once: true });
-    document.addEventListener('touchstart', unlockMobileAudio, { once: true });
 
-    // Phát file MP3 phát âm chuẩn người thật từ Dictionary API
-    async function playHumanMp3(word) {
+      // 1. Mở khóa Web Speech API
+      if (window.speechSynthesis) {
+        try {
+          window.speechSynthesis.resume();
+          const silent = new SpeechSynthesisUtterance(' ');
+          silent.volume = 0.001;
+          window.speechSynthesis.speak(silent);
+        } catch (e) {}
+      }
+
+      // 2. Mở khóa HTML5 Audio Element
       try {
-        const cleanWord = word.toLowerCase().trim();
-        const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data[0] && data[0].phonetics) {
-            const validAudio = data[0].phonetics.find(p => p.audio && p.audio.trim().length > 0);
-            if (validAudio && validAudio.audio) {
-              const audio = new Audio(validAudio.audio);
-              return new Promise(resolve => {
-                audio.onended = () => resolve(true);
-                audio.onerror = () => resolve(false);
-                audio.play().then(() => {}).catch(() => resolve(false));
-              });
-            }
+        globalAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
+        globalAudio.play().then(() => { globalAudio.pause(); }).catch(() => {});
+      } catch (e) {}
+
+      // 3. Mở khóa Web Audio Context cho SFX
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          globalAudioCtx = new AudioCtx();
+          if (globalAudioCtx.state === 'suspended') {
+            globalAudioCtx.resume();
           }
         }
       } catch (e) {}
-      return false;
     }
 
-    function playFallbackAudio(text, onEnd) {
+    document.addEventListener('click', unlockMobileAudio, { capture: true, once: true });
+    document.addEventListener('touchstart', unlockMobileAudio, { capture: true, once: true });
+
+    // Phát âm thanh trực tiếp (Chạy đồng bộ ngay khi bấm nút để vượt qua Autoplay Block trên iOS/Android)
+    function playAudioStream(text, isSentence, onStart, onEnd) {
+      if (onStart) onStart();
+
+      const cleanText = text.replace(/<[^>]*>/g, '').replace(/\(.*?\)/g, '').replace(/\/.*?\//g, '').trim();
+      if (!cleanText) {
+        if (onEnd) onEnd();
+        return;
+      }
+
+      // Phương án 1: Nếu là 1 từ -> Dùng luồng MP3 trực tiếp (Youdao English Audio Engine)
+      if (!isSentence && cleanText.split(/\s+/).length <= 2) {
+        try {
+          globalAudio.pause();
+          globalAudio.currentTime = 0;
+          globalAudio.src = `https://dict.youdao.com/dictvoice?type=2&audio=${encodeURIComponent(cleanText)}`;
+          
+          let played = false;
+          globalAudio.onended = () => { if (!played) { played = true; if (onEnd) onEnd(); } };
+          globalAudio.onerror = () => { if (!played) { played = true; fallbackSpeechSynthesis(cleanText, onEnd); } };
+
+          const playPromise = globalAudio.play();
+          if (playPromise !== undefined) {
+            playPromise.then(() => {}).catch(() => {
+              fallbackSpeechSynthesis(cleanText, onEnd);
+            });
+          }
+          return;
+        } catch (err) {
+          fallbackSpeechSynthesis(cleanText, onEnd);
+          return;
+        }
+      }
+
+      // Phương án 2: Nếu là câu dài -> Dùng Web Speech API hoặc Google TTS Stream
+      fallbackSpeechSynthesis(cleanText, onEnd);
+    }
+
+    // Dự phòng Web Speech API / Google TTS Stream
+    function fallbackSpeechSynthesis(text, onEnd) {
+      let completed = false;
+      const finish = () => {
+        if (!completed) {
+          completed = true;
+          if (onEnd) onEnd();
+        }
+      };
+
+      if (window.speechSynthesis) {
+        try {
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.resume();
+
+          const utt = new SpeechSynthesisUtterance(text);
+          utt.lang = 'en-US';
+          utt.rate = 0.88;
+
+          const voices = window.speechSynthesis.getVoices();
+          const enVoice = voices.find(v => v.lang === 'en-US' || v.lang === 'en-GB') ||
+                          voices.find(v => v.lang && v.lang.startsWith('en'));
+          if (enVoice) utt.voice = enVoice;
+
+          utt.onend = finish;
+          utt.onerror = () => { playGoogleStream(text, finish); };
+
+          window.speechSynthesis.speak(utt);
+          // Timeout phòng trường hợp Web Speech bị treo trên một số thiết bị Android
+          setTimeout(() => { if (!completed) playGoogleStream(text, finish); }, 3500);
+          return;
+        } catch (e) {}
+      }
+
+      playGoogleStream(text, finish);
+    }
+
+    function playGoogleStream(text, onEnd) {
       try {
-        const clean = encodeURIComponent(text);
-        const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${clean}&tl=en&client=tw-ob`;
-        const audio = new Audio(audioUrl);
-        audio.onended = () => { if (onEnd) onEnd(); };
-        audio.onerror = () => { if (onEnd) onEnd(); };
-        audio.play().catch(e => { if (onEnd) onEnd(); });
+        globalAudio.pause();
+        globalAudio.currentTime = 0;
+        globalAudio.src = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=en&client=tw-ob`;
+        globalAudio.onended = () => { if (onEnd) onEnd(); };
+        globalAudio.onerror = () => { if (onEnd) onEnd(); };
+        globalAudio.play().catch(() => { if (onEnd) onEnd(); });
       } catch (err) {
         if (onEnd) onEnd();
       }
     }
 
-    // Đọc to từ tiếng Anh hiện tại (Ưu tiên File MP3 người thật -> Web Speech -> Fallback)
-    async function speakQuestion() {
+    // Đọc to từ tiếng Anh hiện tại
+    function speakQuestion() {
       const current = quizData[currentIndex];
       if (!current) return;
 
@@ -2263,60 +2342,20 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
       if (!word) return;
 
       const btn = document.getElementById('btn-speak');
-      if (btn) {
-        btn.classList.add('speaking');
-        btn.textContent = '🔊 Đang đọc...';
-      }
-
-      const resetBtn = () => {
-        if (btn) {
-          btn.classList.remove('speaking');
-          btn.textContent = '🔊 Nghe phát âm';
+      
+      playAudioStream(
+        word, 
+        false, 
+        () => {
+          if (btn) { btn.classList.add('speaking'); btn.textContent = '🔊 Đang đọc...'; }
+        }, 
+        () => {
+          if (btn) { btn.classList.remove('speaking'); btn.textContent = '🔊 Nghe phát âm'; }
         }
-      };
-
-      // 1. Thử phát bằng MP3 phát âm người thật trước (Chất lượng cao nhất)
-      const playedMp3 = await playHumanMp3(word);
-      if (playedMp3) {
-        resetBtn();
-        return;
-      }
-
-      // 2. Dự phòng bằng Web Speech API
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        setTimeout(() => {
-          try {
-            window.speechSynthesis.resume();
-            const utt = new SpeechSynthesisUtterance(word);
-            utt.lang = 'en-US';
-            utt.rate = 0.85;
-
-            const voices = window.speechSynthesis.getVoices();
-            const enVoice = voices.find(v => v.lang === 'en-US' || v.lang === 'en-GB') ||
-                            voices.find(v => v.lang && v.lang.startsWith('en'));
-            if (enVoice) utt.voice = enVoice;
-
-            let isDone = false;
-            utt.onend = () => { if (!isDone) { isDone = true; resetBtn(); } };
-            utt.onerror = () => {
-              if (!isDone) {
-                isDone = true;
-                playFallbackAudio(word, resetBtn);
-              }
-            };
-
-            window.speechSynthesis.speak(utt);
-          } catch (e) {
-            playFallbackAudio(word, resetBtn);
-          }
-        }, 60);
-      } else {
-        playFallbackAudio(word, resetBtn);
-      }
+      );
     }
 
-    // Đọc to câu ví dụ ngữ cảnh hiện tại bằng Web Speech TTS + Audio Fallback
+    // Đọc to câu ví dụ ngữ cảnh hiện tại
     let currentRawExampleEn = '';
     function speakExampleSentence() {
       if (!currentRawExampleEn) return;
@@ -2324,41 +2363,13 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
       if (!cleanText) return;
 
       const btn = document.getElementById('btn-speak-example');
-      if (btn) btn.textContent = '🔊 Đang đọc...';
 
-      const resetBtn = () => { if (btn) btn.textContent = '🔊 Nghe cả câu'; };
-
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        setTimeout(() => {
-          try {
-            window.speechSynthesis.resume();
-            const utt = new SpeechSynthesisUtterance(cleanText);
-            utt.lang = 'en-US';
-            utt.rate = 0.85;
-
-            const voices = window.speechSynthesis.getVoices();
-            const enVoice = voices.find(v => v.lang === 'en-US' || v.lang === 'en-GB') ||
-                            voices.find(v => v.lang && v.lang.startsWith('en'));
-            if (enVoice) utt.voice = enVoice;
-
-            let isDone = false;
-            utt.onend = () => { if (!isDone) { isDone = true; resetBtn(); } };
-            utt.onerror = () => {
-              if (!isDone) {
-                isDone = true;
-                playFallbackAudio(cleanText, resetBtn);
-              }
-            };
-
-            window.speechSynthesis.speak(utt);
-          } catch (e) {
-            playFallbackAudio(cleanText, resetBtn);
-          }
-        }, 60);
-      } else {
-        playFallbackAudio(cleanText, resetBtn);
-      }
+      playAudioStream(
+        cleanText, 
+        true, 
+        () => { if (btn) btn.textContent = '🔊 Đang đọc...'; }, 
+        () => { if (btn) btn.textContent = '🔊 Nghe cả câu'; }
+      );
     }
 
     // Ghi âm giọng người dùng & so sánh với từ cần học
@@ -2366,7 +2377,7 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
     function startMicCheck() {
       const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRec) {
-        document.getElementById('mic-result').textContent = '⚠️ Trình duyệt không hỗ trợ nhận diện giọng nói. Hãy dùng Chrome.';
+        document.getElementById('mic-result').textContent = '⚠️ Trình duyệt không hỗ trợ nhận diện giọng nói. Hãy dùng Chrome trên Android hoặc Safari trên iOS.';
         return;
       }
 
@@ -2423,6 +2434,8 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
     function resetPronunciationUI() {
       if (micRecognition) { micRecognition.stop(); micRecognition = null; }
       window.speechSynthesis && window.speechSynthesis.cancel();
+      try { globalAudio.pause(); globalAudio.currentTime = 0; } catch (e) {}
+
       const btn = document.getElementById('btn-speak');
       const micBtn = document.getElementById('btn-mic');
       const exBtn = document.getElementById('btn-speak-example');
@@ -2433,29 +2446,37 @@ Future Simple = Thì tương lai đơn (dự đoán hoặc quyết định bộc
       if (res) res.textContent = '';
     }
 
-    // Audio SFX using Web Audio API
+    // Audio SFX using Web Audio API (Tương thích di động)
     function playSfx(type) {
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+        if (!globalAudioCtx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) globalAudioCtx = new AudioCtx();
+        }
+        if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
+          globalAudioCtx.resume();
+        }
+        if (!globalAudioCtx) return;
+
+        const osc = globalAudioCtx.createOscillator();
+        const gain = globalAudioCtx.createGain();
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(globalAudioCtx.destination);
 
         if (type === 'correct') {
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
-          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          osc.frequency.setValueAtTime(523.25, globalAudioCtx.currentTime); // C5
+          osc.frequency.setValueAtTime(659.25, globalAudioCtx.currentTime + 0.1); // E5
+          gain.gain.setValueAtTime(0.2, globalAudioCtx.currentTime);
           osc.start();
-          osc.stop(ctx.currentTime + 0.25);
+          osc.stop(globalAudioCtx.currentTime + 0.25);
         } else if (type === 'wrong') {
           osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(220, ctx.currentTime); // A3
-          osc.frequency.setValueAtTime(174.61, ctx.currentTime + 0.1); // F3
-          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          osc.frequency.setValueAtTime(220, globalAudioCtx.currentTime); // A3
+          osc.frequency.setValueAtTime(174.61, globalAudioCtx.currentTime + 0.1); // F3
+          gain.gain.setValueAtTime(0.2, globalAudioCtx.currentTime);
           osc.start();
-          osc.stop(ctx.currentTime + 0.3);
+          osc.stop(globalAudioCtx.currentTime + 0.3);
         }
       } catch (e) {}
     }
